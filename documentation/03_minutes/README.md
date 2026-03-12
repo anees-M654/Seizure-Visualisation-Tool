@@ -46,6 +46,12 @@ Time:9:00am
 Location: Horton D Lab
 
 Meeting closed at: 11:01am 
+
+
+
+
+
+
 Meeting Minutes
 Organisation / Team:
 Anees & Co.
@@ -74,10 +80,6 @@ Decisions Made
 - Deciding what CASE and programming tools
 
 
-
-
-
-
 Action Items
 
 Action	Responsible 	Deadline
@@ -95,7 +97,11 @@ Time: 9:00am
 Location: Horton D Lab
 
 Meeting closed at: 10:30am
- 
+
+
+
+
+ 
 Meeting Minutes
 Organisation / Team:
 Anees & Co.
@@ -145,7 +151,12 @@ Time: 9:00am
 Location: Horton D Lab
 
 Meeting closed at: 10:45am
- 
+
+
+
+
+
+ 
 Meeting Minutes
 Organisation / Team:
 Anees & Co.
@@ -178,9 +189,7 @@ Decisions Made
 - Started coding and allocating tasks for coding
 
 
-
 Action Items
-
 Action	Responsible	Deadline
 Creating coding files 	Anees	5/3/26
 Researching libraries to be used for the heatmap 	Syed	5/3/26
@@ -196,6 +205,10 @@ Time: 9:00am
 Location: Horton D lab
 
 Meeting closed at: 10:30am 
+
+
+
+
 Meeting Minutes
 Organisation / Team:
 Anees & Co.
