@@ -19,7 +19,7 @@ The Yorkshire and Humber Regional Organised Crime Unit has large amounts of info
 
 The main aim of this project is to build a web based system that acts as a lens, so instead off scrolling through thousands of rows an analyst can upload the file to this system and see a heatmap that indicates any common areas where seizures occurred and a chart of the top 10, showing what city seized the most in terms of illegal items. This will allow them to filter data based on date or location to identify emerging threats and allocate resources.
 
-# Requirments
+# Requirements
 
 -	Geographic Visualisation: The system must automatically produce a ‘heat map’ based on location data, specifically using postcodes.
 
