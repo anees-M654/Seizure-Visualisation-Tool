@@ -192,7 +192,7 @@ const App: React.FC = () => {
             <Shield className="text-blue-400" size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-black tracking-tight leading-none uppercase">Y&H ROCU SEIZURE TOOL</h1>
+            <h1 className="text-xl font-black tracking-tight leading-none uppercase">Y&H REGIONAL CRIMINAL SEIZURE ANALYTICS</h1>
             <p className="text-[9px] text-blue-300 font-bold uppercase tracking-[2px] mt-1">Regional Crime Intelligence System v2.0</p>
           </div>
         </div>
