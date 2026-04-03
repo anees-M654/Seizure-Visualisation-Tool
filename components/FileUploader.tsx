@@ -81,12 +81,12 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload, isLoading }) 
   }, [onFileUpload]);
 
   return (
-    <div className="flex flex-col items-center justify-center border-2 border-dashed border-blue-200 bg-blue-50/30 rounded-2xl p-12 text-center transition-all hover:border-blue-400 hover:bg-blue-50 group">
-      <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+    <div className="flex flex-col items-center justify-center border-2 border-dashed border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-slate-800/50 rounded-2xl p-12 text-center transition-all hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 group">
+      <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
         <Upload size={32} />
       </div>
-      <h2 className="text-xl font-bold text-slate-800 mb-2">Import Seizure Data</h2>
-      <p className="text-slate-500 text-sm mb-6 max-w-xs">
+      <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Import Seizure Data</h2>
+      <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 max-w-xs">
         Upload your spreadsheet in <strong>CSV</strong> or <strong>XLSX</strong> format to begin visual analysis.
       </p>
       

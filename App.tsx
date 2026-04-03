@@ -7,7 +7,7 @@ import HeatMap from './HeatMap';
 import TopTenChart from './TopTenChart';
 import FileUploader from './components/FileUploader';
 import SummaryStats from './components/SummaryStats';
-import { Shield, FileText, AlertCircle, Database, LayoutDashboard, Table, Download, History, MousePointer2 } from 'lucide-react';
+import { Shield, FileText, AlertCircle, Database, LayoutDashboard, Table, Download, History, MousePointer2, Moon, Sun } from 'lucide-react';
 
 // Root component of the Y&H ROCU Seizure Analysis Tool.
 // This orchestrates the data flow from import to visualization.
@@ -28,6 +28,18 @@ const App: React.FC = () => {
   // This allows analysts to see how hotspots developed over time.
   const [timeProgress, setTimeProgress] = useState(100);
 
+  // Dark mode state
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Apply dark mode class to document element
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
   // Central filter state - updated by the sidebar component
   const [filters, setFilters] = useState<FilterState>({
     dateRange: ['', ''],
@@ -35,7 +47,8 @@ const App: React.FC = () => {
     subCategories: [],
     cities: [],
     postcodes: [],
-    keyword: ''
+    keyword: '',
+    spatialFilter: null
   });
 
   // Handles the file import process.
@@ -57,12 +70,11 @@ const App: React.FC = () => {
   // We use useMemo here because this can be expensive with thousands of records.
   const filteredData = useMemo(() => {
     const keyword = filters.keyword.toLowerCase().trim();
-    const searchFields: (keyof SeizureRecord)[] = ['category', 'subCategory', 'itemType', 'city', 'postcode'];
 
     let result = rawData.filter(d => {
-      // 1. Optimized Targeted Keyword Search
+      // 1. Broad Keyword Search (Includes Redacted/Unknown Columns)
       if (keyword) {
-        const isMatch = searchFields.some(field => String(d[field] || '').toLowerCase().includes(keyword));
+        const isMatch = Object.values(d).some(val => String(val || '').toLowerCase().includes(keyword));
         if (!isMatch) return false;
       }
       
@@ -75,16 +87,58 @@ const App: React.FC = () => {
       if (filters.postcodes.length > 0 && !filters.postcodes.some(pc => d.postcode.startsWith(pc))) return false;
       
       // 4. Date Range: manual selection or presets (Monthly/Yearly).
-      if (filters.dateRange[0] && new Date(d.date) < new Date(filters.dateRange[0])) return false;
-      if (filters.dateRange[1] && new Date(d.date) > new Date(filters.dateRange[1])) return false;
+      if (filters.dateRange[0] || filters.dateRange[1]) {
+        const time = new Date(d.date).getTime();
+        if (isNaN(time)) return false; // Ignore records without dates if a date filter is applied
+        if (filters.dateRange[0] && time < new Date(filters.dateRange[0]).getTime()) return false;
+        if (filters.dateRange[1] && time > new Date(filters.dateRange[1]).getTime() + 86400000) return false;
+      }
       
+      // 5. Spatial Filter (Lasso / Radius)
+      if (filters.spatialFilter) {
+        if (!d.latitude || !d.longitude) return false;
+        
+        if (filters.spatialFilter.type === 'circle') {
+          const R = 6371e3; // metres
+          const φ1 = filters.spatialFilter.lat * Math.PI/180;
+          const φ2 = d.latitude * Math.PI/180;
+          const Δφ = (d.latitude - filters.spatialFilter.lat) * Math.PI/180;
+          const Δλ = (d.longitude - filters.spatialFilter.lng) * Math.PI/180;
+
+          const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const distance = R * c;
+
+          if (distance > filters.spatialFilter.radiusMeters) return false;
+        } else if (filters.spatialFilter.type === 'polygon' || filters.spatialFilter.type === 'rectangle') {
+          // Ray casting for point in polygon
+          let inside = false;
+          const vs = filters.spatialFilter.latlngs;
+          const x = d.longitude, y = d.latitude;
+          for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+              const xi = vs[i].lng, yi = vs[i].lat;
+              const xj = vs[j].lng, yj = vs[j].lat;
+              const intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+              if (intersect) inside = !inside;
+          }
+          if (!inside) return false;
+        }
+      }
+
       return true;
     });
 
     // 5. Trend Analysis Logic:
     // We sort by date first, then slice based on the 'timeProgress' slider.
     // This creates the "playback" effect on the map.
-    result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    result.sort((a, b) => {
+      const aTime = new Date(a.date).getTime();
+      const bTime = new Date(b.date).getTime();
+      if (isNaN(aTime) && isNaN(bTime)) return 0;
+      if (isNaN(aTime)) return 1;
+      if (isNaN(bTime)) return -1;
+      return aTime - bTime;
+    });
     const sliceCount = Math.floor(result.length * (timeProgress / 100));
     return result.slice(0, sliceCount);
   }, [rawData, filters, timeProgress]);
@@ -125,7 +179,7 @@ const App: React.FC = () => {
   }, [filteredData]);
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 overflow-hidden font-sans print:h-auto print:overflow-visible print:bg-white">
+    <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-900 overflow-hidden font-sans print:h-auto print:overflow-visible print:bg-white text-slate-800 dark:text-slate-200 transition-colors duration-300">
       <header className="bg-[#0b1c3d] text-white p-4 flex items-center justify-between shadow-xl border-b border-blue-900 z-50">
         <div className="flex items-center gap-3">
           <div className="bg-blue-600/30 p-2 rounded-lg border border-blue-400/20">
@@ -139,6 +193,14 @@ const App: React.FC = () => {
         
         {view === 'dashboard' && (
           <div className="flex items-center gap-2 print:hidden">
+            {/* Dark Mode Toggle */}
+            <button 
+              onClick={() => setIsDarkMode(!isDarkMode)} 
+              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-lg text-xs font-bold transition-all border border-slate-700 mr-2 text-slate-200"
+              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {isDarkMode ? <Sun size={14} className="text-amber-400" /> : <Moon size={14} className="text-blue-300" />}
+            </button>
             {/* Requirement: Export Visualisation into CSV */}
             <button onClick={() => exportToCSV(filteredData)} className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg text-xs font-bold transition-all border border-slate-700">
               <Download size={14} /> Export CSV
@@ -157,20 +219,21 @@ const App: React.FC = () => {
 
       <main className="flex-1 flex overflow-hidden">
         {view === 'import' ? (
-          <div className="flex-1 flex items-center justify-center p-8 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-50 via-slate-50 to-slate-100">
+          <div className="flex-1 flex items-center justify-center p-8 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-50 via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 transition-colors duration-300">
             <FileUploader onFileUpload={handleDataLoad} isLoading={isLoading} />
           </div>
         ) : (
           <>
-            <aside className="w-72 flex-shrink-0 border-r border-slate-200 bg-white shadow-lg z-40 print:hidden">
+            <aside className="w-72 flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-lg z-40 print:hidden transition-colors duration-300">
               <Filters 
                 filters={filters} 
                 onFilterChange={(u) => setFilters(f => ({ ...f, ...u }))}
                 uniqueValues={uniqueValues}
+                rawData={rawData}
               />
             </aside>
 
-            <div className="flex-1 flex flex-col overflow-hidden bg-slate-100 print:overflow-visible print:bg-white print:block">
+            <div className="flex-1 flex flex-col overflow-hidden bg-slate-100 dark:bg-slate-900 print:overflow-visible print:bg-white print:block transition-colors duration-300">
               {/* Structured Report Header for PDF Exports */}
               <div className="hidden print:block p-8 border-b-4 border-[#0b1c3d] mb-4 bg-white">
                 <div className="flex justify-between items-end">
@@ -192,9 +255,9 @@ const App: React.FC = () => {
               </div>
 
               {/* Requirement: Data quality assessment scan (identifies gaps/missing fields) */}
-              {quality && (quality as any).invalidRows > 0 && (
+              {quality && (quality.malformedDates > 0 || quality.invalidPostcodes > 0) && (
                 <div className="bg-amber-500 text-white p-1.5 px-6 flex items-center justify-center gap-3 text-[10px] font-bold uppercase tracking-wider animate-pulse print:hidden">
-                  <AlertCircle size={14} /> Data Integrity Alert: {(quality as any).invalidRows} records ignored due to missing location/date fields
+                  <AlertCircle size={14} /> Data Integrity Alert: {quality.malformedDates + quality.invalidPostcodes} data quality issues detected (missing dates or map locations). These records remain searchable but are hidden from the visual heatmap.
                 </div>
               )}
 
@@ -204,19 +267,19 @@ const App: React.FC = () => {
                 </div>
                 
                 <div className="lg:col-span-8 space-y-4 flex flex-col h-full min-h-[500px] print:h-[480px] print:mb-6">
-                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4 flex-1 relative">
+                  <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-4 flex-1 relative transition-colors duration-300">
                     <div className="flex items-center justify-between print:mb-2">
                       <div className="flex items-center gap-3">
-                        <LayoutDashboard className="text-blue-600" size={20} />
-                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Interactive Hotspot Map</h2>
+                        <LayoutDashboard className="text-blue-600 dark:text-blue-400" size={20} />
+                        <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide">Interactive Hotspot Map</h2>
                       </div>
                       <div className="flex items-center gap-4 print:hidden">
-                        <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold bg-slate-50 px-2 py-1 rounded border border-slate-100">
+                        <div className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-bold bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded border border-slate-100 dark:border-slate-800">
                           <MousePointer2 size={10} /> Scroll to Zoom | Drag to Move
                         </div>
                         <button 
                           onClick={() => setShowTable(!showTable)}
-                          className="text-[10px] font-bold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1 bg-blue-50 px-2 py-1 rounded border border-blue-100"
+                          className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded border border-blue-100 dark:border-blue-800/50"
                         >
                           <Table size={12} /> {showTable ? 'Show Map' : 'Show Data Grid'}
                         </button>
@@ -224,9 +287,9 @@ const App: React.FC = () => {
                     </div>
                     
                     {/* Requirement: Geographic Visualisation Heat Map */}
-                    <div className="flex-1 rounded-xl overflow-hidden border border-slate-100 min-h-[400px] print:min-h-[350px]">
+                    <div className="flex-1 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-700 min-h-[400px] print:min-h-[350px]">
                       {showTable ? (
-                        <div className="h-full overflow-auto bg-white">
+                        <div className="h-full overflow-auto bg-white dark:bg-slate-800">
                           <table className="w-full border-collapse text-[10px]">
                             <thead className="sticky top-0 bg-slate-900 text-white z-10">
                               <tr>
@@ -237,11 +300,11 @@ const App: React.FC = () => {
                                 ))}
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                               {filteredData.slice(0, 100).map((r, i) => (
-                                <tr key={r.id} className={i % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                <tr key={r.id} className={i % 2 === 0 ? 'bg-slate-50/50 dark:bg-slate-800/50' : 'bg-white dark:bg-slate-800'}>
                                   {dynamicHeaders.map(header => (
-                                    <td key={`${r.id}-${header}`} className="p-2.5 border-r border-slate-100 max-w-[150px] truncate text-slate-600">
+                                    <td key={`${r.id}-${header}`} className="p-2.5 border-r border-slate-100 dark:border-slate-700 max-w-[150px] truncate text-slate-600 dark:text-slate-300">
                                       {header === 'date' ? r.date.split('T')[0] : String(r[header] || '')}
                                     </td>
                                   ))}
@@ -250,13 +313,18 @@ const App: React.FC = () => {
                             </tbody>
                           </table>
                           {filteredData.length > 100 && (
-                            <div className="p-3 text-center text-slate-400 text-[10px] font-bold bg-slate-50">
+                            <div className="p-3 text-center text-slate-400 dark:text-slate-500 text-[10px] font-bold bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-700">
                               Showing first 100 records. Export CSV for full dataset.
                             </div>
                           )}
                         </div>
                       ) : (
-                        <HeatMap data={filteredData} />
+                        <HeatMap 
+                          data={filteredData.filter(d => d.latitude !== 0 && d.longitude !== 0)} 
+                          isDarkMode={isDarkMode} 
+                          onSpatialFilter={(spatialFilter) => setFilters(f => ({ ...f, spatialFilter }))}
+                          activeSpatialFilter={filters.spatialFilter}
+                        />
                       )}
                     </div>
 
@@ -289,32 +357,32 @@ const App: React.FC = () => {
 
                 {/* Requirement: Produce a top 10 summary of data */}
                 <div className="lg:col-span-4 space-y-4 overflow-y-auto pr-1 print:overflow-visible print:grid print:grid-cols-3 print:gap-4 print:space-y-0">
-                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between print:hidden">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Visualisation Mode</span>
-                    <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                  <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between print:hidden transition-colors duration-300">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Visualisation Mode</span>
+                    <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800">
                       <button 
                         onClick={() => setChartType('bar')}
-                        className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${chartType === 'bar' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${chartType === 'bar' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                       >
                         Bar
                       </button>
                       <button 
                         onClick={() => setChartType('pie')}
-                        className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${chartType === 'pie' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${chartType === 'pie' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                       >
                         Pie
                       </button>
                     </div>
                   </div>
 
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm h-[280px] hover:shadow-md transition-shadow print:h-[280px] print:break-inside-avoid print:shadow-none print:border-slate-100">
-                    <TopTenChart data={filteredData} type="city" chartType={chartType} />
+                  <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-[280px] hover:shadow-md transition-shadow duration-300 print:h-[280px] print:break-inside-avoid print:shadow-none print:border-slate-100">
+                    <TopTenChart data={filteredData} type="city" chartType={chartType} isDarkMode={isDarkMode} />
                   </div>
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm h-[280px] hover:shadow-md transition-shadow print:h-[280px] print:break-inside-avoid print:shadow-none print:border-slate-100">
-                    <TopTenChart data={filteredData} type="category" chartType={chartType} />
+                  <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-[280px] hover:shadow-md transition-shadow duration-300 print:h-[280px] print:break-inside-avoid print:shadow-none print:border-slate-100">
+                    <TopTenChart data={filteredData} type="category" chartType={chartType} isDarkMode={isDarkMode} />
                   </div>
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm h-[280px] hover:shadow-md transition-shadow print:h-[280px] print:break-inside-avoid print:shadow-none print:border-slate-100">
-                    <TopTenChart data={filteredData} type="itemType" chartType={chartType} />
+                  <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-[280px] hover:shadow-md transition-shadow duration-300 print:h-[280px] print:break-inside-avoid print:shadow-none print:border-slate-100">
+                    <TopTenChart data={filteredData} type="itemType" chartType={chartType} isDarkMode={isDarkMode} />
                   </div>
                 </div>
               </div>

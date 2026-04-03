@@ -70,54 +70,41 @@ export const parseRawData = (data: any[]): { records: SeizureRecord[], quality: 
     const itemVal = row.Item || row.item || row.ITEM_NAME || subCategoryVal;
     const qtyVal = row.Quantity || row.qty || 1;
 
-    // Critical fields check: if we don't have a date or location, we can't map it.
+    // We now KEEP records with missing location/date fields so they remain searchable in the grid,
+    // rather than rejecting them entirely.
     if (!dateVal) trackMissing('Date');
     if (!postcodeVal) trackMissing('Postcode');
     if (!categoryVal) trackMissing('Category');
 
-    if (!dateVal || !postcodeVal || !categoryVal) {
-      invalidRows++;
-      return;
-    }
-
     // Date Validation
     const parsedDate = new Date(dateVal);
-    if (isNaN(parsedDate.getTime())) {
-      malformedDates++;
-      invalidRows++;
-      return;
-    }
+    const isValidDate = !isNaN(parsedDate.getTime());
+    if (!isValidDate) malformedDates++;
 
-    // Postcode Geocoding:
-    // We extract the area code (e.g., 'LS' from 'LS1 1UR') and look up coordinates.
-    const cleanPostcode = String(postcodeVal).toUpperCase().trim();
+    // Postcode Geocoding
+    const cleanPostcode = postcodeVal ? String(postcodeVal).toUpperCase().trim() : 'Unknown Area';
     const pcMatch = cleanPostcode.match(/^([A-Z]{1,2})/);
     const pcArea = pcMatch ? pcMatch[1] : null;
     const coords = pcArea ? YORKSHIRE_GEO_MAP[pcArea] : null;
 
-    if (!coords) {
-      invalidPostcodes++;
-      invalidRows++;
-      return;
-    }
+    if (!coords) invalidPostcodes++;
 
     // Jitter: we add a tiny bit of randomness to the coordinates.
-    // This prevents markers from overlapping perfectly if they share the same postcode area.
     const jitter = () => (Math.random() - 0.5) * 0.02;
 
     records.push({
       id: `record-${index}`,
-      date: parsedDate.toISOString(),
-      city: cityVal || 'Unknown',
+      date: isValidDate ? parsedDate.toISOString() : '',
+      city: cityVal || 'Location Unknown',
       postcode: cleanPostcode,
-      category: categoryVal,
-      subCategory: subCategoryVal,
-      item: itemVal,
-      itemType: categoryVal,
-      quantity: Number(qtyVal),
+      category: categoryVal || 'Uncategorised',
+      subCategory: subCategoryVal || 'Uncategorised',
+      item: itemVal || 'Unknown',
+      itemType: categoryVal || 'Uncategorised',
+      quantity: Number(qtyVal) || 1,
       cash: Number(row.Cash || row.Value || 0),
-      latitude: coords.lat + jitter(),
-      longitude: coords.lng + jitter(),
+      latitude: coords ? coords.lat + jitter() : 0,
+      longitude: coords ? coords.lng + jitter() : 0,
       ...row // We spread the original row so any extra columns are preserved for the table view.
     });
   });

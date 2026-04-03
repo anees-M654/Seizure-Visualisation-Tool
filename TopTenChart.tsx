@@ -1,14 +1,15 @@
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { SeizureRecord } from '../types';
+import { SeizureRecord } from './types';
 
 interface TopTenChartProps {
   data: SeizureRecord[];
   type: 'city' | 'category' | 'itemType';
   chartType: 'bar' | 'pie';
+  isDarkMode: boolean;
 }
 
-const TopTenChart: React.FC<TopTenChartProps> = ({ data, type, chartType }) => {
+const TopTenChart: React.FC<TopTenChartProps> = ({ data, type, chartType, isDarkMode }) => {
   const chartData = useMemo(() => {
     const counts: Record<string, number> = {};
     data.forEach(d => {
@@ -61,8 +62,8 @@ const TopTenChart: React.FC<TopTenChartProps> = ({ data, type, chartType }) => {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">{titleMap[type]}</h3>
-        <span className="text-[8px] font-bold text-slate-400 uppercase">Top 10 Focus</span>
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">{titleMap[type]}</h3>
+        <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase">Top 10 Focus</span>
       </div>
 
       <div className="flex-1">
@@ -70,13 +71,13 @@ const TopTenChart: React.FC<TopTenChartProps> = ({ data, type, chartType }) => {
           {chartType === 'bar' ? (
             <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 30, top: 0, bottom: 0 }}>
               <XAxis type="number" hide />
-              <YAxis 
-                dataKey="name" 
-                type="category" 
-                width={110} 
-                fontSize={9} 
+              <YAxis
+                dataKey="name"
+                type="category"
+                width={110}
+                fontSize={9}
                 fontWeight={700}
-                tick={{ fill: '#64748b' }}
+                tick={{ fill: isDarkMode ? '#cbd5e1' : '#64748b' }}
                 axisLine={false}
                 tickLine={false}
               />

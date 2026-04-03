@@ -1,6 +1,8 @@
 /* Global styles for the Y&H ROCU Seizure Tool */
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 body {
   margin: 0;
   padding: 0;
@@ -29,4 +31,61 @@ input[type=range]::-webkit-slider-runnable-track {
 
 input[type=range]::-webkit-slider-thumb {
   margin-top: -4px;
+}
+
+/* Custom styling for the intelligence snapshot popup to match its dark theme */
+.intelligence-snapshot-popup .leaflet-popup-content-wrapper {
+  background-color: #0b1c3d;
+  padding: 0;
+  border: 1px solid rgba(30, 58, 138, 0.5); /* border-blue-900/50 */
+}
+
+.intelligence-snapshot-popup .leaflet-popup-content {
+  margin: 0;
+  border-radius: 0.75rem;
+}
+
+.intelligence-snapshot-popup .leaflet-popup-tip {
+  background-color: #0b1c3d;
+  border-bottom: 1px solid rgba(30, 58, 138, 0.5);
+  border-right: 1px solid rgba(30, 58, 138, 0.5);
+}
+
+/* Tactical, Intelligence-styled overrides for Leaflet Marker Clusters */
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background-color: rgba(30, 58, 138, 0.3) !important; /* Outer glow ring */
+  border-radius: 50%;
+}
+
+.marker-cluster div {
+  background-color: rgba(11, 28, 61, 0.95) !important; /* Deep tactical navy */
+  color: #60a5fa !important; /* bright blue text */
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 900 !important;
+  font-size: 11px !important;
+  border: 1px solid rgba(96, 165, 250, 0.5) !important; /* glowing blue border */
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4) !important;
+  border-radius: 50%;
+}
+
+/* Style the default leaflet popups for individual markers to match */
+.leaflet-popup-content-wrapper {
+  background-color: #0b1c3d !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  border-radius: 0.75rem !important;
+}
+
+.leaflet-popup-tip {
+  background-color: #0b1c3d !important;
+}
+
+.leaflet-popup-close-button {
+  color: #64748b !important;
+}
+.leaflet-popup-close-button:hover {
+  color: #94a3b8 !important;
 }

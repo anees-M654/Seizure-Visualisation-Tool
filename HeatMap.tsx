@@ -5,16 +5,23 @@ import { Target } from 'lucide-react';
 
 interface HeatMapProps {
   data: SeizureRecord[];
+  isDarkMode: boolean;
+  onSpatialFilter?: (filter: any) => void;
+  activeSpatialFilter?: any;
 }
 
 // This component handles the Leaflet map and the heatmap layer.
 // We use the global 'L' object which is loaded via CDN in index.html.
 declare const L: any;
 
-const HeatMap: React.FC<HeatMapProps> = ({ data }) => {
+const HeatMap: React.FC<HeatMapProps> = ({ data, isDarkMode, onSpatialFilter, activeSpatialFilter }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const heatLayerRef = useRef<any>(null);
+  const tileLayerRef = useRef<any>(null);
+  const clusterGroupRef = useRef<any>(null);
+  const drawControlRef = useRef<any>(null);
+  const drawnItemsRef = useRef<any>(null);
   const [radius, setRadius] = useState(35);
 
   // Requirement: Seamlessly adapt map size when sidebar toggles or window resizes.
@@ -43,16 +50,24 @@ const HeatMap: React.FC<HeatMapProps> = ({ data }) => {
       
       
 
-      // Standard OpenStreetMap tiles - no API key required for this.
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(mapRef.current);
-
       // Store initial view for reset button
       mapRef.current.initialView = {
         center: mapRef.current.getCenter(),
         zoom: mapRef.current.getZoom()
       };
+    }
+
+    // Update tile layer based on dark mode state
+    const tileUrl = isDarkMode 
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+    if (tileLayerRef.current) {
+      tileLayerRef.current.setUrl(tileUrl);
+    } else if (mapRef.current) {
+      tileLayerRef.current = L.tileLayer(tileUrl, {
+        attribution: '&copy; OpenStreetMap contributors & CARTO'
+      }).addTo(mapRef.current);
     }
 
     // Cleanup existing layers before re-rendering
@@ -92,8 +107,73 @@ const HeatMap: React.FC<HeatMapProps> = ({ data }) => {
       `;
     };
 
-    // 2. Prepare and Render Heatmap Layer
-    const heatPoints = data.map(d => [d.latitude, d.longitude, (d.quantity || 1) * 0.2]);
+    // 2. Prepare MarkerCluster and Heatmap Layers
+    if (!clusterGroupRef.current) {
+      clusterGroupRef.current = L.markerClusterGroup({
+        maxClusterRadius: 40,
+        disableClusteringAtZoom: 16
+      }).addTo(mapRef.current);
+    }
+    
+    // Setup drawing tools
+    if (!drawnItemsRef.current) {
+      drawnItemsRef.current = new L.FeatureGroup();
+      mapRef.current.addLayer(drawnItemsRef.current);
+      
+      drawControlRef.current = new L.Control.Draw({
+        edit: { featureGroup: drawnItemsRef.current, edit: false },
+        draw: {
+          polyline: false, marker: false, circlemarker: false,
+          polygon: { shapeOptions: { color: '#3b82f6', weight: 2 } },
+          rectangle: { shapeOptions: { color: '#3b82f6', weight: 2 } },
+          circle: { shapeOptions: { color: '#3b82f6', weight: 2 } }
+        }
+      });
+      mapRef.current.addControl(drawControlRef.current);
+
+      mapRef.current.on('draw:created', (event: any) => {
+        const layer = event.layer;
+        drawnItemsRef.current.clearLayers();
+        drawnItemsRef.current.addLayer(layer);
+
+        if (onSpatialFilter) {
+          if (event.layerType === 'circle') {
+            onSpatialFilter({ type: 'circle', lat: layer.getLatLng().lat, lng: layer.getLatLng().lng, radiusMeters: layer.getRadius() });
+          } else {
+            onSpatialFilter({ type: event.layerType, latlngs: layer.getLatLngs()[0].map((l: any) => ({ lat: l.lat, lng: l.lng })) });
+          }
+        }
+      });
+
+      mapRef.current.on('draw:deleted', () => {
+        if (onSpatialFilter) onSpatialFilter(null);
+      });
+    }
+
+    // Keep drawn bounds visible if passed down from clear
+    if (!activeSpatialFilter && drawnItemsRef.current) {
+      drawnItemsRef.current.clearLayers();
+    }
+
+    clusterGroupRef.current.clearLayers();
+
+    const heatPoints: any[] = [];
+    data.forEach(d => {
+      heatPoints.push([d.latitude, d.longitude, (d.quantity || 1) * 0.2]);
+
+      const marker = L.circleMarker([d.latitude, d.longitude], {
+        radius: 6, fillColor: '#3b82f6', color: '#1d4ed8', weight: 2, fillOpacity: 0.8
+      });
+      
+      marker.bindPopup(`
+        <div class="px-1 py-1 font-sans">
+          <p class="font-black text-blue-600 uppercase text-[9px] mb-1">${d.date.split('T')[0]}</p>
+          <p class="text-[11px] font-bold text-slate-800">${d.category} - ${d.itemType}</p>
+          <p class="text-[10px] text-slate-600">${d.quantity} units seized</p>
+        </div>
+      `);
+      clusterGroupRef.current.addLayer(marker);
+    });
 
     // Create the heat layer with a custom gradient: Blue (low) -> Lime -> Red (high).
     heatLayerRef.current = L.heatLayer(heatPoints, {
@@ -149,7 +229,7 @@ const HeatMap: React.FC<HeatMapProps> = ({ data }) => {
     return () => {
       // Clean up if needed
     };
-  }, [data, radius]);
+  }, [data, radius, isDarkMode]);
 
   const handleRecenter = () => {
     if (mapRef.current) {
@@ -161,14 +241,14 @@ const HeatMap: React.FC<HeatMapProps> = ({ data }) => {
   };
 
   return (
-    <div className="relative w-full h-full rounded-xl overflow-hidden shadow-inner bg-slate-200 border border-slate-300">
+    <div className="relative w-full h-full rounded-xl overflow-hidden shadow-inner bg-slate-200 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 transition-colors duration-300">
       <div ref={mapContainerRef} className="w-full h-full" />
       
       {/* Interactive Controls Overlay */}
       <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2 print:hidden">
         <button 
           onClick={handleRecenter}
-          className="p-2 bg-white/90 hover:bg-white text-blue-600 rounded-lg shadow-md border border-slate-200 transition-all active:scale-95"
+          className="p-2 bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 transition-all active:scale-95"
           title="Reset View to Yorkshire Overview"
         >
           <Target size={18} />
@@ -176,10 +256,10 @@ const HeatMap: React.FC<HeatMapProps> = ({ data }) => {
       </div>
 
       {/* Requirement: Manual Heatmap Radius Adjustment Slider */}
-      <div className="absolute top-4 right-16 z-[1000] bg-white/90 p-3 rounded-lg shadow-md border border-slate-200 flex flex-col gap-2 min-w-[140px] print:hidden">
+      <div className="absolute top-4 right-16 z-[1000] bg-white/90 dark:bg-slate-800/90 p-3 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 flex flex-col gap-2 min-w-[140px] print:hidden transition-colors duration-300">
         <div className="flex justify-between items-center">
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 font-sans">Heat Radius</span>
-          <span className="text-[10px] font-mono font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">{radius}px</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 font-sans">Heat Radius</span>
+          <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800/50">{radius}px</span>
         </div>
         <input 
           type="range" min="5" max="80" step="1" 
@@ -189,7 +269,7 @@ const HeatMap: React.FC<HeatMapProps> = ({ data }) => {
         />
       </div>
 
-      <div className="absolute bottom-4 right-4 z-[1000] bg-white/90 p-2 rounded-lg shadow-md border border-slate-200 text-xs print:bg-white print:border-slate-100">
+      <div className="absolute bottom-4 right-4 z-[1000] bg-white/90 dark:bg-slate-800/90 p-2 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 print:bg-white print:border-slate-100 transition-colors duration-300">
         <p className="font-bold mb-1">Density Legend</p>
         <div className="flex items-center gap-2">
           <div className="w-12 h-2 bg-gradient-to-r from-blue-500 via-lime-500 to-red-500 rounded"></div>

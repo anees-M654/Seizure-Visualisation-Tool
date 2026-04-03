@@ -23,6 +23,16 @@ export interface DataQualityReport {
   invalidRows: number;
 }
 
+export type SpatialFilter = {
+  type: 'circle';
+  lat: number;
+  lng: number;
+  radiusMeters: number;
+} | {
+  type: 'polygon' | 'rectangle';
+  latlngs: { lat: number; lng: number }[];
+} | null;
+
 export interface FilterState {
   dateRange: [string, string];
   categories: string[];
@@ -30,6 +40,7 @@ export interface FilterState {
   cities: string[];
   postcodes: string[];
   keyword: string;
+  spatialFilter?: SpatialFilter;
 }
 
 export enum AppStatus {
