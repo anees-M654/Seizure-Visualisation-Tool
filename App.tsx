@@ -3,8 +3,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { SeizureRecord, FilterState, DataQualityReport } from './types';
 import { parseRawData, generateMockData, exportToCSV } from './utils/dataProcessor';
 import Filters from './components/Filters';
-import HeatMap from './components/HeatMap';
-import TopTenChart from './components/TopTenChart';
+import HeatMap from './HeatMap';
+import TopTenChart from './TopTenChart';
 import FileUploader from './components/FileUploader';
 import SummaryStats from './components/SummaryStats';
 import { Shield, FileText, AlertCircle, Database, LayoutDashboard, Table, Download, History, MousePointer2 } from 'lucide-react';
@@ -43,11 +43,11 @@ const App: React.FC = () => {
   const handleDataLoad = (data: any[]) => {
     setIsLoading(true);
     setTimeout(() => {
-      // Use the actual uploaded data if present, otherwise fallback to mock for testing
       const dataToParse = data.length > 0 ? data : generateMockData(400);
-      const { records, quality } = parseRawData(dataToParse);
-      setRawData(records);
-      setQuality(quality);
+      // Fix: Use unique names to avoid shadowing the component state
+      const { records: loadedRecords, quality: report } = parseRawData(dataToParse);
+      setRawData(loadedRecords);
+      setQuality(report);
       setIsLoading(false);
       setView('dashboard');
     }, 1200);
@@ -57,7 +57,7 @@ const App: React.FC = () => {
   // We use useMemo here because this can be expensive with thousands of records.
   const filteredData = useMemo(() => {
     const keyword = filters.keyword.toLowerCase().trim();
-    const searchFields: (keyof SeizureRecord)[] = ['category', 'subCategory', 'item', 'city', 'postcode'];
+    const searchFields: (keyof SeizureRecord)[] = ['category', 'subCategory', 'itemType', 'city', 'postcode'];
 
     let result = rawData.filter(d => {
       // 1. Optimized Targeted Keyword Search
@@ -314,7 +314,7 @@ const App: React.FC = () => {
                     <TopTenChart data={filteredData} type="category" chartType={chartType} />
                   </div>
                   <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm h-[280px] hover:shadow-md transition-shadow print:h-[280px] print:break-inside-avoid print:shadow-none print:border-slate-100">
-                    <TopTenChart data={filteredData} type="item" chartType={chartType} />
+                    <TopTenChart data={filteredData} type="itemType" chartType={chartType} />
                   </div>
                 </div>
               </div>

@@ -85,7 +85,7 @@ const HeatMap: React.FC<HeatMapProps> = ({ data }) => {
       const summary = records.slice(0, 15).map(r =>
         `<div class="mb-2 pb-2 border-b border-blue-800/40 last:border-0 last:mb-0 last:pb-0">
           <p class="font-black text-blue-300 uppercase" style="font-size: 9px; letter-spacing: 0.05em;">${r.category} > ${r.subCategory}</p>
-          <p class="text-white font-medium" style="font-size: 10px;">${r.item} (${r.quantity} units)</p>
+          <p class="text-white font-medium" style="font-size: 10px;">${r.itemType} (${r.quantity} units)</p>
           <p class="text-blue-100/60 italic" style="font-size: 8px;">${r.date.split('T')[0]} - ${r.city} (${r.postcode})</p>
           <a href="https://www.google.com/maps?q=&layer=c&cbll=${r.latitude},${r.longitude}" 
              target="_blank" 
