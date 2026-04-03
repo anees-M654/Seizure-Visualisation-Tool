@@ -43,10 +43,9 @@ const App: React.FC = () => {
   const handleDataLoad = (data: any[]) => {
     setIsLoading(true);
     setTimeout(() => {
-      // For the demo, we generate some mock data if the file is empty or for testing.
-      // In a real scenario, we'd just parse the 'data' parameter directly.
-      const mock = generateMockData(400); 
-      const { records, quality } = parseRawData(mock);
+      // Use the actual uploaded data if present, otherwise fallback to mock for testing
+      const dataToParse = data.length > 0 ? data : generateMockData(400);
+      const { records, quality } = parseRawData(dataToParse);
       setRawData(records);
       setQuality(quality);
       setIsLoading(false);

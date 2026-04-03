@@ -40,6 +40,24 @@ const HeatMap: React.FC<HeatMapProps> = ({ data }) => {
     if (!mapRef.current) {
       // Centering on Leeds/Yorkshire area by default.
       mapRef.current = L.map(mapContainerRef.current).setView([53.79, -1.54], 8);
+
+      // Inject custom CSS to strip Leaflet's default popup styling for the intelligence snapshot
+      const styleId = 'leaflet-popup-cleaner';
+      if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.innerHTML = `
+          .intelligence-snapshot-popup .leaflet-popup-content-wrapper {
+            background: transparent !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
+          .intelligence-snapshot-popup .leaflet-popup-content { margin: 0 !important; }
+          .intelligence-snapshot-popup .leaflet-popup-tip-container { display: none !important; }
+        `;
+        document.head.appendChild(style);
+      }
       
       // Standard OpenStreetMap tiles - no API key required for this.
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -65,14 +83,14 @@ const HeatMap: React.FC<HeatMapProps> = ({ data }) => {
     // Helper to generate popup content for area intelligence
     const generatePopupContent = (records: SeizureRecord[]): string => {
       const summary = records.slice(0, 15).map(r =>
-        `<div class="mb-2 pb-1 border-b border-slate-100 last:border-0">
-          <p class="font-bold text-blue-700 uppercase" style="font-size: 9px;">${r.category} > ${r.subCategory}</p>
-          <p class="text-slate-600" style="font-size: 10px;">${r.item} (${r.quantity} units)</p>
-          <p class="text-slate-400 italic" style="font-size: 8px;">${r.date.split('T')[0]} - ${r.city} (${r.postcode})</p>
+        `<div class="mb-2 pb-2 border-b border-blue-800/40 last:border-0 last:mb-0 last:pb-0">
+          <p class="font-black text-blue-300 uppercase" style="font-size: 9px; letter-spacing: 0.05em;">${r.category} > ${r.subCategory}</p>
+          <p class="text-white font-medium" style="font-size: 10px;">${r.item} (${r.quantity} units)</p>
+          <p class="text-blue-100/60 italic" style="font-size: 8px;">${r.date.split('T')[0]} - ${r.city} (${r.postcode})</p>
           <a href="https://www.google.com/maps?q=&layer=c&cbll=${r.latitude},${r.longitude}" 
              target="_blank" 
              rel="noopener noreferrer" 
-             class="text-blue-500 hover:underline font-bold inline-block mt-0.5" 
+             class="text-blue-400 hover:text-blue-300 underline font-black inline-block mt-1 uppercase" 
              style="font-size: 8px;">
              VIEW STREET VIEW
           </a>
@@ -80,12 +98,12 @@ const HeatMap: React.FC<HeatMapProps> = ({ data }) => {
       ).join('');
 
       return `
-        <div class="p-1 font-sans" style="width: 220px;">
-          <h4 class="font-black text-[10px] uppercase tracking-widest text-blue-600 mb-2 border-b border-blue-50 pb-1">Area Intelligence (${records.length} records)</h4>
-          <div style="max-height: 200px; overflow-y: auto; padding-right: 4px; scrollbar-width: thin;">
+        <div class="p-3 bg-[#0b1c3d] text-white rounded-xl shadow-2xl border border-blue-900/50 font-sans" style="width: 240px;">
+          <h4 class="font-black text-[10px] uppercase tracking-widest text-blue-400 mb-3 border-b border-blue-800/50 pb-2">Area Intelligence (${records.length} records)</h4>
+          <div style="max-height: 220px; overflow-y: auto; padding-right: 8px; scrollbar-width: thin; scrollbar-color: #1e40af #0b1c3d;">
             ${summary}
           </div>
-          ${records.length > 15 ? `<p class="text-[8px] font-bold text-slate-400 text-center mt-2 bg-slate-50 py-1 rounded">+ ${records.length - 15} more records in this vicinity</p>` : ''}
+          ${records.length > 15 ? `<p class="text-[8px] font-black text-blue-400/60 text-center mt-3 pt-2 border-t border-blue-800/50 uppercase tracking-tighter">+ ${records.length - 15} additional records in this cluster</p>` : ''}
         </div>
       `;
     };
@@ -124,7 +142,11 @@ const HeatMap: React.FC<HeatMapProps> = ({ data }) => {
 
         // Requirement: Open popup at cluster center only after animation completes
         mapRef.current.once('moveend', () => {
-          L.popup()
+          L.popup({
+            className: 'intelligence-snapshot-popup',
+            closeButton: false,
+            offset: [0, 10]
+          })
             .setLatLng(mapRef.current.getCenter())
             .setContent(generatePopupContent(nearbyRecords))
             .openOn(mapRef.current);

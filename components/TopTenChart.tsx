@@ -1,112 +1,112 @@
-
 import React, { useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { SeizureRecord } from '../types';
 
 interface TopTenChartProps {
   data: SeizureRecord[];
-  type: 'city' | 'item' | 'category';
-  chartType?: 'bar' | 'pie';
+  type: 'city' | 'category' | 'item';
+  chartType: 'bar' | 'pie';
 }
 
-// A reusable chart component for "Top 10" summaries.
-// It can render as a horizontal bar chart or a pie chart.
-const TopTenChart: React.FC<TopTenChartProps> = ({ data, type, chartType = 'bar' }) => {
-  // We compute the top 10 rankings on the fly based on the currently filtered data.
+const TopTenChart: React.FC<TopTenChartProps> = ({ data, type, chartType }) => {
   const chartData = useMemo(() => {
     const counts: Record<string, number> = {};
     data.forEach(d => {
-      // We map the 'type' prop to the actual data field.
-      const key = d[type === 'city' ? 'city' : type === 'category' ? 'category' : 'item'] || 'Unknown';
+      const key = d[type] || 'Unknown';
       counts[key] = (counts[key] || 0) + 1;
     });
 
-    // Sort descending and take the top 10.
     return Object.entries(counts)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 10);
   }, [data, type]);
 
-  // A professional and distinct color palette for the charts.
-  const colors = [
-    '#1e3a8a', // Deep Blue
-    '#059669', // Emerald
-    '#4f46e5', // Indigo
-    '#d97706', // Amber
-    '#e11d48', // Rose
-    '#0891b2', // Cyan
-    '#7c3aed', // Violet
-    '#475569', // Slate
-    '#ea580c', // Orange
-    '#0d9488'  // Teal
-  ];
+  const totalCount = useMemo(() => data.length, [data]);
 
-  if (chartData.length === 0) {
-    return <div className="h-full flex items-center justify-center text-slate-400">No data available for top chart.</div>;
-  }
+  // High-contrast Intelligence Palette: Moves from deep navy to vibrant teal to maintain readability
+  const COLORS = ['#1e3a8a', '#1e40af', '#1d4ed8', '#2563eb', '#3b82f6', '#0ea5e9', '#06b6d4', '#0891b2', '#0d9488', '#14b8a6'];
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const val = payload[0].value;
+      const percentage = ((val / totalCount) * 100).toFixed(1);
+      return (
+        <div className="bg-[#0b1c3d] text-white p-3 rounded-xl shadow-2xl border border-blue-900/50">
+          <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{payload[0].payload.name}</p>
+          <div className="flex items-center gap-3">
+            <span className="text-lg font-bold">{val}</span>
+            <span className="text-[10px] font-bold bg-blue-500/20 px-1.5 py-0.5 rounded border border-blue-500/30">
+              {percentage}% of Total
+            </span>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const titleMap = {
+    city: "Top Seizure Locations",
+    category: "Classification Distribution",
+    item: "Primary Items Seized"
+  };
+
+  if (chartData.length === 0) return (
+    <div className="h-full flex items-center justify-center text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+      No Data for Visualization
+    </div>
+  );
 
   return (
-    <div className="h-full w-full">
-      <h3 className="text-[10px] font-black mb-4 uppercase tracking-widest text-slate-400 border-b border-slate-100 pb-2">Top 10 by {type}</h3>
-      <ResponsiveContainer width="100%" height="85%">
-        {chartType === 'bar' ? (
-          <BarChart layout="vertical" data={chartData} margin={{ left: 0, right: 30, top: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-            <XAxis type="number" hide />
-            <YAxis 
-              type="category" 
-              dataKey="name" 
-              width={100} 
-              tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 700 }} 
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip 
-              cursor={{ fill: '#f8fafc' }} 
-              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 'bold' }}
-            />
-            <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-              ))}
-            </Bar>
-          </BarChart>
-        ) : (
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              innerRadius={40}
-              outerRadius={70}
-              paddingAngle={5}
-              dataKey="value"
-            >
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-              ))}
-            </Pie>
-            <Tooltip 
-              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 'bold' }}
-            />
-            <Legend 
-              layout="vertical" 
-              align="right" 
-              verticalAlign="middle" 
-              iconType="circle" 
-              wrapperStyle={{ 
-                fontSize: '8px', 
-                fontWeight: 'bold', 
-                textTransform: 'uppercase', 
-                letterSpacing: '0.05em',
-                paddingLeft: '10px',
-                lineHeight: '1.5'
-              }}
-            />
-          </PieChart>
-        )}
-      </ResponsiveContainer>
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500">{titleMap[type]}</h3>
+        <span className="text-[8px] font-bold text-slate-400 uppercase">Top 10 Focus</span>
+      </div>
+
+      <div className="flex-1">
+        <ResponsiveContainer width="100%" height="100%">
+          {chartType === 'bar' ? (
+            <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 30, top: 0, bottom: 0 }}>
+              <XAxis type="number" hide />
+              <YAxis 
+                dataKey="name" 
+                type="category" 
+                width={110} 
+                fontSize={9} 
+                fontWeight={700}
+                tick={{ fill: '#64748b' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
+              <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={12}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          ) : (
+            <PieChart>
+              <Tooltip content={<CustomTooltip />} />
+              <Pie
+                data={chartData}
+                innerRadius={50}
+                outerRadius={70}
+                paddingAngle={4}
+                dataKey="value"
+                animationBegin={0}
+                animationDuration={800}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(255,255,255,0.2)" />
+                ))}
+              </Pie>
+            </PieChart>
+          )}
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };

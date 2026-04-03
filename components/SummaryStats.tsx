@@ -122,7 +122,7 @@ const SummaryStats: React.FC<SummaryStatsProps> = ({ data }) => {
           title="Operational Trend" 
           content="Compares seizure frequency in the second half of the selected timeframe against the first half to identify rising or falling activity." 
         />
-        <div className="absolute top-2 right-2 text-slate-300 group-hover:text-blue-500 transition-colors">
+        <div className="absolute top-2 right-2 text-slate-300 group-hover:text-blue-500">
           <Info size={12} />
         </div>
         <div className="flex items-center gap-3">
@@ -149,7 +149,7 @@ const SummaryStats: React.FC<SummaryStatsProps> = ({ data }) => {
           title="Weighted Hub Logic" 
           content="Cities are ranked by the total volume (quantity) of items seized, ensuring large-scale shipments take precedence over high-frequency small incidents." 
         />
-        <div className="absolute top-2 right-2 text-slate-300 group-hover:text-blue-500 transition-colors">
+        <div className="absolute top-2 right-2 text-slate-300 group-hover:text-blue-500">
           <Info size={12} />
         </div>
         <div className="bg-violet-50 p-2 rounded-xl border border-violet-100">
