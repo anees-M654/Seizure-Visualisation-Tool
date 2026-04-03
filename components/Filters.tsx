@@ -137,7 +137,7 @@ const Filters: React.FC<FiltersProps> = ({ filters, onFilterChange, uniqueValues
                 onFilterChange({ cities: newCities });
               }}
               className={`text-[10px] px-2 py-1 rounded-md border transition-all ${
-                filters.cities.includes(city) ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-400'
+                filters.cities.includes(city) ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-400'
               }`}
             >
               {city}
@@ -158,7 +158,7 @@ const Filters: React.FC<FiltersProps> = ({ filters, onFilterChange, uniqueValues
                 onFilterChange({ postcodes: newPc });
               }}
               className={`text-[10px] p-1 border text-center rounded transition-all ${
-                    filters.postcodes.includes(pc) ? 'bg-slate-800 text-white border-slate-800 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-white'
+                filters.postcodes.includes(pc) ? 'bg-slate-800 text-white border-slate-800 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-white'
               }`}
             >
               {pc}
