@@ -5,6 +5,7 @@ import { parseRawData, generateMockData, exportToCSV } from './utils/dataProcess
 import Filters from './components/Filters';
 import HeatMap from './HeatMap';
 import TopTenChart from './TopTenChart';
+import TimeSeriesChart from './components/TimeSeriesChart';
 import FileUploader from './components/FileUploader';
 import SummaryStats from './components/SummaryStats';
 import { Shield, FileText, AlertCircle, Database, LayoutDashboard, Table, Download, History, MousePointer2, Moon, Sun } from 'lucide-react';
@@ -52,18 +53,23 @@ const App: React.FC = () => {
   });
 
   // Handles the file import process.
-  // We simulate a small delay to give the user feedback that processing is happening.
-  const handleDataLoad = (data: any[]) => {
+  const handleDataLoad = async (dataToParse: any[]) => {
     setIsLoading(true);
-    setTimeout(() => {
-      const dataToParse = data.length > 0 ? data : generateMockData(400);
-      // Fix: Use unique names to avoid shadowing the component state
-      const { records: loadedRecords, quality: report } = parseRawData(dataToParse);
+    
+    // Wait slightly to let React flush the loading status to the DOM so the spinner appears
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    try {
+      const data = dataToParse.length > 0 ? dataToParse : generateMockData(400);
+      const { records: loadedRecords, quality: report } = await parseRawData(data);
       setRawData(loadedRecords);
       setQuality(report);
       setIsLoading(false);
       setView('dashboard');
-    }, 1200);
+    } catch (e) {
+      console.error("Failed parsing specific data", e);
+      setIsLoading(false);
+    }
   };
 
   // The engine of the dashboard: computes the filtered dataset based on all active criteria.
@@ -383,6 +389,10 @@ const App: React.FC = () => {
                   </div>
                   <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-[280px] hover:shadow-md transition-shadow duration-300 print:h-[280px] print:break-inside-avoid print:shadow-none print:border-slate-100">
                     <TopTenChart data={filteredData} type="itemType" chartType={chartType} isDarkMode={isDarkMode} />
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-[240px] hover:shadow-md transition-shadow duration-300 print:h-[240px] print:break-inside-avoid print:shadow-none print:border-slate-100">
+                    <TimeSeriesChart data={filteredData} isDarkMode={isDarkMode} />
                   </div>
                 </div>
               </div>

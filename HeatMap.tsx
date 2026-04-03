@@ -188,7 +188,7 @@ const HeatMap: React.FC<HeatMapProps> = ({ data, isDarkMode, onSpatialFilter, ac
     mapRef.current.on('click', (e: any) => {
       const clickLatLng = e.latlng;
       
-      // Requirement: Regular Area Intelligence - find records within 2km of click
+      // Requirement: Regular Area Intelligence popup
       const nearbyRecords = data.filter(d => {
         const dist = clickLatLng.distanceTo(L.latLng(d.latitude, d.longitude));
         return dist < 2000; // 2km radius

@@ -49,7 +49,7 @@ export const generateMockData = (count: number): any[] => {
 };
 
 // The core parser that converts raw spreadsheet rows into our typed SeizureRecord format.
-export const parseRawData = (data: any[]): { records: SeizureRecord[], quality: DataQualityReport } => {
+export const parseRawData = async (data: any[]): Promise<{ records: SeizureRecord[], quality: DataQualityReport }> => {
   const records: SeizureRecord[] = [];
   let invalidRows = 0;
   let malformedDates = 0;
@@ -60,7 +60,10 @@ export const parseRawData = (data: any[]): { records: SeizureRecord[], quality: 
     missingFields[field] = (missingFields[field] || 0) + 1;
   };
 
-  data.forEach((row, index) => {
+  // Pre-process rows to extract all unique postcodes
+  const uniquePostcodes = new Set<string>();
+  
+  const rawRows = data.map((row, index) => {
     // We try to be flexible with column names in case the source spreadsheet changes.
     const dateVal = row.Date || row.date || row.SEIZURE_DATE;
     const cityVal = row.City || row.city || row.LOCATION;
@@ -81,31 +84,90 @@ export const parseRawData = (data: any[]): { records: SeizureRecord[], quality: 
     const isValidDate = !isNaN(parsedDate.getTime());
     if (!isValidDate) malformedDates++;
 
-    // Postcode Geocoding
-    const cleanPostcode = postcodeVal ? String(postcodeVal).toUpperCase().trim() : 'Unknown Area';
-    const pcMatch = cleanPostcode.match(/^([A-Z]{1,2})/);
-    const pcArea = pcMatch ? pcMatch[1] : null;
-    const coords = pcArea ? YORKSHIRE_GEO_MAP[pcArea] : null;
+    const cleanPostcode = postcodeVal ? String(postcodeVal).toUpperCase().trim().replace(/\s+/g, '') : '';
+    if (cleanPostcode) uniquePostcodes.add(cleanPostcode);
 
-    if (!coords) invalidPostcodes++;
+    return { row, index, isValidDate, parsedDate, cityVal, cleanPostcode, originalPostcode: postcodeVal, categoryVal, subCategoryVal, itemVal, qtyVal };
+  });
 
-    // Jitter: we add a tiny bit of randomness to the coordinates.
-    const jitter = () => (Math.random() - 0.5) * 0.02;
+  // Batch Postcodes.io API lookups at hyper-speed via Promise.all
+  const postcodeMap = new Map<string, { lat: number, lng: number } | null>();
+  const pcArray = Array.from(uniquePostcodes);
+  const CHUNK_SIZE = 100;
+
+  const fetchPromises = [];
+
+  for (let i = 0; i < pcArray.length; i += CHUNK_SIZE) {
+    const chunk = pcArray.slice(i, i + CHUNK_SIZE);
+    
+    // Create the API fetch Promise but do NOT stall the loop waiting for it. 
+    // We add it to our array of "waiters" immediately!
+    const singleBatchPromise = fetch('https://api.postcodes.io/postcodes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ postcodes: chunk })
+    })
+    .then(async (response) => {
+      if (response.ok) {
+        const result = await response.json();
+        result.result.forEach((res: any) => {
+           // Because postcodes.io strips spaces on input matches, we index by query stripped
+           if (res.result) {
+             postcodeMap.set(res.query.replace(/\s+/g, ''), { lat: res.result.latitude, lng: res.result.longitude });
+           } else {
+             postcodeMap.set(res.query.replace(/\s+/g, ''), null);
+           }
+        });
+      }
+    })
+    .catch((err) => console.error("Geocoding Parallel Batch Failed", err));
+
+    fetchPromises.push(singleBatchPromise);
+  }
+
+  // Wait for all the parallel waiters to return from the internet simultaneously
+  await Promise.all(fetchPromises);
+
+  // Final mapping with precision targeting
+  rawRows.forEach(parsed => {
+    let lat = 0;
+    let lng = 0;
+
+    if (parsed.cleanPostcode) {
+       const exact = postcodeMap.get(parsed.cleanPostcode);
+       if (exact) {
+         // Exact rooftop mapping, no random jitter applied
+         lat = exact.lat;
+         lng = exact.lng;
+       } else {
+         // Fallback to fuzzy prefix if exact lookup failed (like generated mock data or malformed real data)
+         const pcMatch = parsed.cleanPostcode.match(/^([A-Z]{1,2})/);
+         const pcArea = pcMatch ? pcMatch[1] : null;
+         const fallbackCoords = pcArea ? YORKSHIRE_GEO_MAP[pcArea] : null;
+         if (fallbackCoords) {
+           // Jitter is ONLY applied to the blurry fallback center to prevent overlapping stacks of dead pins.
+           lat = fallbackCoords.lat + ((Math.random() - 0.5) * 0.02);
+           lng = fallbackCoords.lng + ((Math.random() - 0.5) * 0.02);
+         }
+       }
+    }
+
+    if (lat === 0 && lng === 0) invalidPostcodes++;
 
     records.push({
-      id: `record-${index}`,
-      date: isValidDate ? parsedDate.toISOString() : '',
-      city: cityVal || 'Location Unknown',
-      postcode: cleanPostcode,
-      category: categoryVal || 'Uncategorised',
-      subCategory: subCategoryVal || 'Uncategorised',
-      item: itemVal || 'Unknown',
-      itemType: categoryVal || 'Uncategorised',
-      quantity: Number(qtyVal) || 1,
-      cash: Number(row.Cash || row.Value || 0),
-      latitude: coords ? coords.lat + jitter() : 0,
-      longitude: coords ? coords.lng + jitter() : 0,
-      ...row // We spread the original row so any extra columns are preserved for the table view.
+      id: `record-${parsed.index}`,
+      date: parsed.isValidDate ? parsed.parsedDate.toISOString() : '',
+      city: parsed.cityVal || 'Location Unknown',
+      postcode: parsed.originalPostcode ? String(parsed.originalPostcode).toUpperCase().trim() : 'Unknown Area',
+      category: parsed.categoryVal || 'Uncategorised',
+      subCategory: parsed.subCategoryVal || 'Uncategorised',
+      item: parsed.itemVal || 'Unknown',
+      itemType: parsed.categoryVal || 'Uncategorised',
+      quantity: Number(parsed.qtyVal) || 1,
+      cash: Number(parsed.row.Cash || parsed.row.Value || 0),
+      latitude: lat,
+      longitude: lng,
+      ...parsed.row 
     });
   });
 
