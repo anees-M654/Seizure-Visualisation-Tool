@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { SeizureRecord } from '../types';
+import { SeizureRecord } from './types';
 import { Target } from 'lucide-react';
 
 interface HeatMapProps {
@@ -40,25 +40,9 @@ const HeatMap: React.FC<HeatMapProps> = ({ data }) => {
     if (!mapRef.current) {
       // Centering on Leeds/Yorkshire area by default.
       mapRef.current = L.map(mapContainerRef.current).setView([53.79, -1.54], 8);
-
-      // Inject custom CSS to strip Leaflet's default popup styling for the intelligence snapshot
-      const styleId = 'leaflet-popup-cleaner';
-      if (!document.getElementById(styleId)) {
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.innerHTML = `
-          .intelligence-snapshot-popup .leaflet-popup-content-wrapper {
-            background: transparent !important;
-            padding: 0 !important;
-            box-shadow: none !important;
-            border: none !important;
-          }
-          .intelligence-snapshot-popup .leaflet-popup-content { margin: 0 !important; }
-          .intelligence-snapshot-popup .leaflet-popup-tip-container { display: none !important; }
-        `;
-        document.head.appendChild(style);
-      }
       
+      
+
       // Standard OpenStreetMap tiles - no API key required for this.
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
