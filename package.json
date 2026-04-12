@@ -1,11 +1,12 @@
 {
-  "name": "yorkshire-&-humber-seizure-lens",
+  "name": "yorkshire-and-humber-seizure-lens",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:single": "vite build && echo '✅ Single-file build complete → dist/index.html'",
     "preview": "vite preview",
     "lint": "tsc --noEmit"
   },
@@ -31,6 +32,7 @@
     "@types/papaparse": "^5.5.2",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vite-plugin-singlefile": "^2.3.2"
   }
 }
