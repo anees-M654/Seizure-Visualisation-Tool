@@ -245,7 +245,7 @@ const HeatMap: React.FC<HeatMapProps> = ({ data, isDarkMode, onSpatialFilter, ac
       <div ref={mapContainerRef} className="w-full h-full" />
       
       {/* Interactive Controls Overlay */}
-      <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2 print:hidden">
+      <div className="absolute bottom-4 left-4 z-[1000] flex flex-col gap-2 print:hidden">
         <button 
           onClick={handleRecenter}
           className="p-2 bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 transition-all active:scale-95"
@@ -256,7 +256,7 @@ const HeatMap: React.FC<HeatMapProps> = ({ data, isDarkMode, onSpatialFilter, ac
       </div>
 
       {/* Requirement: Manual Heatmap Radius Adjustment Slider */}
-      <div className="absolute top-4 right-16 z-[1000] bg-white/90 dark:bg-slate-800/90 p-3 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 flex flex-col gap-2 min-w-[140px] print:hidden transition-colors duration-300">
+      <div className="absolute bottom-4 left-16 z-[1000] bg-white/90 dark:bg-slate-800/90 p-3 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 flex flex-col gap-2 min-w-[140px] print:hidden transition-colors duration-300">
         <div className="flex justify-between items-center">
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 font-sans">Heat Radius</span>
           <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800/50">{radius}px</span>

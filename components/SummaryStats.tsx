@@ -158,15 +158,22 @@ const SummaryStats: React.FC<SummaryStatsProps> = ({ data }) => {
       </div>
 
       {/* 4. Top Category */}
-      <div className="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-3 transition-colors duration-300">
+      <div className="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-3 relative group cursor-help transition-colors duration-300">
+        <IntelligenceTooltip 
+          title="Primary Class Indicator" 
+          content="Represents the commodity class with the highest frequency of seizure events within the current filtered view. The percentage indicates its proportion compared to all other classes." 
+        />
+        <div className="absolute top-2 right-2 text-slate-300 dark:text-slate-600 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 hidden xl:block">
+          <Info size={12} />
+        </div>
         <div className="bg-emerald-50 dark:bg-emerald-900/30 p-2 rounded-xl border border-emerald-100 dark:border-emerald-800/50">
           <Package className="text-emerald-600 dark:text-emerald-400" size={18} />
         </div>
         <div className="min-w-0">
           <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest truncate">Primary Class</p>
-          <div className="flex items-end gap-1.5">
-            <p className="text-base font-black text-slate-800 dark:text-slate-100 truncate leading-none">{stats.topCategory}</p>
-            <span className="text-[9px] font-bold text-slate-400 pb-[1px]">{stats.topCategoryPct}%</span>
+          <div className="flex items-end gap-1.5 flex-wrap">
+            <p className="text-base font-black text-slate-800 dark:text-slate-100 leading-tight break-all sm:break-normal">{stats.topCategory}</p>
+            <span className="text-[9px] font-bold text-slate-400 pb-[1px] whitespace-nowrap">{stats.topCategoryPct}%</span>
           </div>
         </div>
       </div>
@@ -205,7 +212,7 @@ const SummaryStats: React.FC<SummaryStatsProps> = ({ data }) => {
         </div>
         <div className="min-w-0">
           <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest truncate">Weighted Hub</p>
-          <p className="text-base font-black text-slate-800 dark:text-slate-100 truncate leading-none">{stats.topCity}</p>
+          <p className="text-base font-black text-slate-800 dark:text-slate-100 leading-tight">{stats.topCity}</p>
         </div>
       </div>
     </div>

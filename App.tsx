@@ -362,7 +362,7 @@ const App: React.FC = () => {
                 </div>
 
                 {/* Requirement: Produce a top 10 summary of data */}
-                <div className="lg:col-span-4 space-y-4 overflow-y-auto pr-1 print:overflow-visible print:grid print:grid-cols-3 print:gap-4 print:space-y-0">
+                <div className="lg:col-span-4 space-y-4 overflow-y-auto pr-1 print:overflow-visible print:grid print:grid-cols-2 print:gap-4 print:space-y-0">
                   <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between print:hidden transition-colors duration-300">
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Visualisation Mode</span>
                     <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800">
