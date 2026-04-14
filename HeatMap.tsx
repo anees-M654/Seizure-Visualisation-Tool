@@ -57,10 +57,17 @@ const HeatMap: React.FC<HeatMapProps> = ({ data, isDarkMode, onSpatialFilter, ac
       };
     }
 
+    // Toggle dark-map class for CSS-based tile filtering
+    if (mapContainerRef.current) {
+      if (isDarkMode) {
+        mapContainerRef.current.classList.add('dark-map');
+      } else {
+        mapContainerRef.current.classList.remove('dark-map');
+      }
+    }
+
     // Update tile layer based on dark mode state
-    const tileUrl = isDarkMode 
-      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
     if (tileLayerRef.current) {
       tileLayerRef.current.setUrl(tileUrl);

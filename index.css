@@ -89,3 +89,12 @@ input[type=range]::-webkit-slider-thumb {
 .leaflet-popup-close-button:hover {
   color: #94a3b8 !important;
 }
+
+/* Dark mode map tiles: soft navy-blue filter (Google Maps style) */
+/* Inverts the bright OSM tiles, rotates hue back to natural, then 
+   boosts brightness for a readable, soft dark-blue appearance.
+   Only targets tile-pane so heatmap/markers stay vivid. */
+.dark-map .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(200deg) brightness(1.1) contrast(0.85) saturate(0.6);
+  transition: filter 0.3s ease;
+}
