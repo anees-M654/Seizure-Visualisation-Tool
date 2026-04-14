@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:single": "vite build && echo '✅ Single-file build complete → dist/index.html'",
+    "build:single": "vite build && echo 'Single-file build complete → dist/index.html'",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "test": "vitest run --reporter=verbose"
