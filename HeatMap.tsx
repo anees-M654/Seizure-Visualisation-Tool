@@ -67,7 +67,9 @@ const HeatMap: React.FC<HeatMapProps> = ({ data, isDarkMode, onSpatialFilter, ac
     }
 
     // Update tile layer based on dark mode state
-    const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    // Using Carto basemaps to prevent 403 Access Blocked errors when the user opens the app as a local HTML file
+    // (OpenStreetMap blocks requests from file:/// which lack Referer headers)
+    const tileUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 
     if (tileLayerRef.current) {
       tileLayerRef.current.setUrl(tileUrl);
