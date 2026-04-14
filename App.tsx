@@ -295,7 +295,7 @@ const App: React.FC = () => {
                     {/* Requirement: Geographic Visualisation Heat Map */}
                     <div className="flex-1 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-700 min-h-[400px] print:min-h-[350px]">
                       {showTable ? (
-                        <div className="h-full overflow-auto bg-white dark:bg-slate-800">
+                        <div className="h-full max-h-[500px] overflow-auto bg-white dark:bg-slate-800 rounded-xl relative">
                           <table className="w-full border-collapse text-[10px]">
                             <thead className="sticky top-0 bg-slate-900 text-white z-10">
                               <tr>

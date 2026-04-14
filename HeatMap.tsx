@@ -174,9 +174,9 @@ const HeatMap: React.FC<HeatMapProps> = ({ data, isDarkMode, onSpatialFilter, ac
       
       marker.bindPopup(`
         <div class="px-1 py-1 font-sans">
-          <p class="font-black text-blue-600 uppercase text-[9px] mb-1">${d.date.split('T')[0]}</p>
-          <p class="text-[11px] font-bold text-slate-800">${d.category} - ${d.itemType}</p>
-          <p class="text-[10px] text-slate-600">${d.quantity} units seized</p>
+          <p class="font-black text-blue-400 uppercase text-[9px] mb-1">${d.date.split('T')[0]}</p>
+          <p class="text-[11px] font-bold text-white">${d.category} - ${d.itemType}</p>
+          <p class="text-[10px] text-blue-200/80">${d.quantity} units seized</p>
         </div>
       `);
       clusterGroupRef.current.addLayer(marker);
