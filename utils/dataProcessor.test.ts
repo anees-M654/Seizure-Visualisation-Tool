@@ -67,5 +67,81 @@ describe('dataProcessor', () => {
       expect(record.latitude).toBeDefined();
       expect(record.longitude).toBeDefined();
     });
+
+    it('should track malformed dates in quality report', async () => {
+      const mockRawData = [{
+        Date: 'invalid-date-string',
+        City: 'Leeds',
+        Postcode: 'LS1 1AA',
+        Category: 'Firearms',
+        Quantity: 1
+      }];
+
+      const result = await parseRawData(mockRawData);
+      expect(result.quality.malformedDates).toBe(1);
+      expect(result.records[0].date).toBe(''); // Should be empty string if invalid
+    });
+
+    it('should track invalid postcodes in quality report', async () => {
+      const mockRawData = [{
+        Date: '2023-01-01',
+        Postcode: 'INVALID-PC',
+        Category: 'Cash',
+        Quantity: 100
+      }];
+
+      const result = await parseRawData(mockRawData);
+      expect(result.quality.invalidPostcodes).toBe(1);
+      expect(result.records[0].latitude).toBe(0);
+      expect(result.records[0].longitude).toBe(0);
+    });
+  });
+
+  describe('exportToCSV', () => {
+    beforeEach(() => {
+      // Mock global URL and Blob for CSV export test
+      global.URL.createObjectURL = vi.fn(() => 'mock-url');
+      global.Blob = vi.fn();
+      
+      // Mock document methods for triggering download
+      vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
+        if (tagName === 'a') {
+          return {
+            setAttribute: vi.fn(),
+            click: vi.fn(),
+            style: {},
+            remove: vi.fn()
+          } as any;
+        }
+        return document.createElement(tagName);
+      });
+      
+      vi.spyOn(document.body, 'appendChild').mockImplementation(() => ({}) as any);
+      vi.spyOn(document.body, 'removeChild').mockImplementation(() => ({}) as any);
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('should trigger a download when data is provided', async () => {
+      const { exportToCSV } = await import('./dataProcessor');
+      const mockRecords = [{
+        id: '1', date: '2023-01-01', city: 'Leeds', postcode: 'LS1', category: 'A', 
+        subCategory: 'B', item: 'C', itemType: 'D', quantity: 1, cash: 100,
+        latitude: 53.8, longitude: -1.5
+      } as any];
+
+      exportToCSV(mockRecords);
+
+      expect(global.URL.createObjectURL).toHaveBeenCalled();
+      expect(document.createElement).toHaveBeenCalledWith('a');
+    });
+
+    it('should not trigger download for empty data', async () => {
+      const { exportToCSV } = await import('./dataProcessor');
+      exportToCSV([]);
+      expect(global.URL.createObjectURL).not.toHaveBeenCalled();
+    });
   });
 });
