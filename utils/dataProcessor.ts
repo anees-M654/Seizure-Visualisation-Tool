@@ -81,7 +81,7 @@ export const parseRawData = async (data: any[]): Promise<{ records: SeizureRecor
 
     // Date Validation
     const parsedDate = new Date(dateVal);
-    const isValidDate = !isNaN(parsedDate.getTime());
+    const isValidDate = !Number.isNaN(parsedDate.getTime());
     if (!isValidDate) malformedDates++;
 
     const cleanPostcode = postcodeVal ? String(postcodeVal).toUpperCase().trim().replace(/\s+/g, '') : '';
@@ -194,7 +194,7 @@ export const exportToCSV = (data: SeizureRecord[]) => {
   ];
 
   const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
-  const url = window.URL.createObjectURL(blob);
+  const url = globalThis.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.setAttribute('hidden', '');
   a.setAttribute('href', url);

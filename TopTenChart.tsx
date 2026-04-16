@@ -2,6 +2,25 @@ import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { SeizureRecord } from './types';
 
+const CustomTooltip = ({ active, payload, totalCount }: any) => {
+  if (active && payload && payload.length) {
+    const val = payload[0].value;
+    const percentage = ((val / totalCount) * 100).toFixed(1);
+    return (
+      <div className="bg-[#0b1c3d] text-white p-3 rounded-xl shadow-2xl border border-blue-900/50">
+        <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{payload[0].payload.name}</p>
+        <div className="flex items-center gap-3">
+          <span className="text-lg font-bold">{val}</span>
+          <span className="text-[10px] font-bold bg-blue-500/20 px-1.5 py-0.5 rounded border border-blue-500/30">
+            {percentage}% of Total
+          </span>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 interface TopTenChartProps {
   data: SeizureRecord[];
   type: 'city' | 'category' | 'itemType';
@@ -27,25 +46,6 @@ const TopTenChart: React.FC<TopTenChartProps> = ({ data, type, chartType, isDark
 
   // High-contrast Intelligence Palette: Moves from deep navy to vibrant teal to maintain readability
   const COLORS = ['#1e3a8a', '#1e40af', '#1d4ed8', '#2563eb', '#3b82f6', '#0ea5e9', '#06b6d4', '#0891b2', '#0d9488', '#14b8a6'];
-
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const val = payload[0].value;
-      const percentage = ((val / totalCount) * 100).toFixed(1);
-      return (
-        <div className="bg-[#0b1c3d] text-white p-3 rounded-xl shadow-2xl border border-blue-900/50">
-          <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{payload[0].payload.name}</p>
-          <div className="flex items-center gap-3">
-            <span className="text-lg font-bold">{val}</span>
-            <span className="text-[10px] font-bold bg-blue-500/20 px-1.5 py-0.5 rounded border border-blue-500/30">
-              {percentage}% of Total
-            </span>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
 
   const titleMap = {
     city: "Top Seizure Locations",
@@ -81,16 +81,16 @@ const TopTenChart: React.FC<TopTenChartProps> = ({ data, type, chartType, isDark
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
+              <Tooltip content={<CustomTooltip totalCount={totalCount} />} cursor={{ fill: 'transparent' }} />
               <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={12}>
                 {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <Cell key={`cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Bar>
             </BarChart>
           ) : (
             <PieChart>
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltip totalCount={totalCount} />} />
               <Pie
                 data={chartData}
                 innerRadius={50}
@@ -101,7 +101,7 @@ const TopTenChart: React.FC<TopTenChartProps> = ({ data, type, chartType, isDark
                 animationDuration={800}
               >
                 {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(255,255,255,0.2)" />
+                  <Cell key={`cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(255,255,255,0.2)" />
                 ))}
               </Pie>
             </PieChart>

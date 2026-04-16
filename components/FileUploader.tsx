@@ -9,6 +9,62 @@ interface FileUploaderProps {
   isLoading: boolean;
 }
 
+const parseCSV = (file: File, onFileUpload: (data: any[]) => void) => {
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: (results) => {
+      onFileUpload(results.data);
+    },
+    error: (error) => {
+      console.error("Error parsing CSV:", error);
+      alert("Failed to parse CSV file.");
+    }
+  });
+};
+
+const parseXLSX = (file: File, onFileUpload: (data: any[]) => void) => {
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      const buffer = event.target?.result as ArrayBuffer;
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+      const worksheet = workbook.getWorksheet(1);
+      if (!worksheet) throw new Error("No worksheet found");
+
+      const data: any[] = [];
+      const headers: string[] = [];
+
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) {
+          row.eachCell((cell) => {
+            headers.push(String(cell.value));
+          });
+        } else {
+          const rowData: any = {};
+          row.eachCell((cell, colNumber) => {
+            const header = headers[colNumber - 1];
+            if (header) {
+              let value = cell.value;
+              if (value && typeof value === 'object' && 'result' in value) {
+                value = (value as any).result;
+              }
+              rowData[header] = value;
+            }
+          });
+          data.push(rowData);
+        }
+      });
+      onFileUpload(data);
+    } catch (error) {
+      console.error("Error parsing XLSX:", error);
+      alert("Failed to parse Excel file.");
+    }
+  };
+  reader.readAsArrayBuffer(file);
+};
+
 const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload, isLoading }) => {
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -17,64 +73,9 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload, isLoading }) 
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
 
     if (fileExtension === 'csv') {
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          onFileUpload(results.data);
-        },
-        error: (error) => {
-          console.error("Error parsing CSV:", error);
-          alert("Failed to parse CSV file.");
-        }
-      });
+      parseCSV(file, onFileUpload);
     } else if (fileExtension === 'xlsx') {
-      try {
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-          try {
-            const buffer = event.target?.result as ArrayBuffer;
-            const workbook = new ExcelJS.Workbook();
-            await workbook.xlsx.load(buffer);
-            const worksheet = workbook.getWorksheet(1);
-            if (!worksheet) throw new Error("No worksheet found");
-
-            const data: any[] = [];
-            const headers: string[] = [];
-
-            worksheet.eachRow((row, rowNumber) => {
-              if (rowNumber === 1) {
-                // Extract headers
-                row.eachCell((cell) => {
-                  headers.push(String(cell.value));
-                });
-              } else {
-                // Map row to object
-                const rowData: any = {};
-                row.eachCell((cell, colNumber) => {
-                  const header = headers[colNumber - 1];
-                  if (header) {
-                    // Handle potential date objects from ExcelJS
-                    let value = cell.value;
-                    if (value && typeof value === 'object' && 'result' in value) {
-                      value = (value as any).result;
-                    }
-                    rowData[header] = value;
-                  }
-                });
-                data.push(rowData);
-              }
-            });
-            onFileUpload(data);
-          } catch (error) {
-            console.error("Error parsing XLSX:", error);
-            alert("Failed to parse Excel file.");
-          }
-        };
-        reader.readAsArrayBuffer(file);
-      } catch (error) {
-        console.error("Error reading file:", error);
-      }
+      parseXLSX(file, onFileUpload);
     } else {
       alert("Unsupported file format. Please upload a .csv or .xlsx file.");
     }

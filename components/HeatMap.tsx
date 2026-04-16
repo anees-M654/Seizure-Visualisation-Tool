@@ -200,7 +200,7 @@ const HeatMap: React.FC<HeatMapProps> = ({ data }) => {
         <input 
           type="range" min="5" max="80" step="1" 
           value={radius} 
-          onChange={(e) => setRadius(parseInt(e.target.value))}
+          onChange={(e) => setRadius(Number.parseInt(e.target.value, 10))}
           className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
         />
       </div>

@@ -36,7 +36,7 @@ const Filters: React.FC<FiltersProps> = ({ filters, onFilterChange, uniqueValues
 
   const histogramData = useMemo(() => {
     if (!rawData.length) return [];
-    const times = rawData.map(d => new Date(d.date).getTime()).filter(t => isFinite(t));
+    const times = rawData.map(d => new Date(d.date).getTime()).filter(t => Number.isFinite(t));
     if (times.length === 0) return [];
     
     const minTime = Math.min(...times);
@@ -81,7 +81,7 @@ const Filters: React.FC<FiltersProps> = ({ filters, onFilterChange, uniqueValues
         <div className="flex flex-wrap gap-1.5 pb-2 mb-2 border-b border-slate-100 dark:border-slate-800">
           {activePills.map((pill, i) => (
             <button
-              key={i}
+              key={`${pill.label}-${i}`}
               onClick={pill.remove}
               className="flex items-center gap-1 text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-1 rounded border border-blue-200 dark:border-blue-800/50 hover:bg-red-100 dark:hover:bg-red-900/40 hover:text-red-700 dark:hover:text-red-300 hover:border-red-200 dark:hover:border-red-800 transition-colors"
             >
@@ -93,9 +93,10 @@ const Filters: React.FC<FiltersProps> = ({ filters, onFilterChange, uniqueValues
 
       {/* Global Keyword Search */}
       <div className="space-y-2">
-        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Global Search</label>
+        <label htmlFor="keyword-search" className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Global Search</label>
         <div className="relative">
           <input
+            id="keyword-search"
             type="text"
             placeholder="Search keywords..."
             className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors duration-300"
@@ -128,7 +129,7 @@ const Filters: React.FC<FiltersProps> = ({ filters, onFilterChange, uniqueValues
               
               return (
                 <div 
-                  key={i} 
+                  key={`bin-${i}`} 
                   className={`w-full rounded-t-[1px] transition-all duration-300 ${isInRange ? 'bg-blue-500 dark:bg-blue-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                   style={{ height: `${Math.max(5, bin.normalized * 100)}%` }}
                   title={`${bin.count} items`}
@@ -209,11 +210,12 @@ const Filters: React.FC<FiltersProps> = ({ filters, onFilterChange, uniqueValues
 
       {/* City Filter */}
       <div className="space-y-2">
-        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1">
+        <label htmlFor="city-search" className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1">
           <MapPin size={14} /> City Filter
         </label>
         <div className="relative pt-1 pb-1">
           <input
+            id="city-search"
             type="text"
             placeholder="Search city..."
             className="w-full pl-7 pr-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-[11px] text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500"
@@ -242,9 +244,10 @@ const Filters: React.FC<FiltersProps> = ({ filters, onFilterChange, uniqueValues
 
       {/* Postcode Prefix Selection */}
       <div className="space-y-2">
-        <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Postcode Regions</label>
+        <label htmlFor="postcode-search" className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Postcode Regions</label>
         <div className="relative pt-1 pb-1">
           <input
+            id="postcode-search"
             type="text"
             placeholder="Search postcode..."
             className="w-full pl-7 pr-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-[11px] text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500"

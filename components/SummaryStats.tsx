@@ -2,6 +2,17 @@ import React, { useMemo } from 'react';
 import { SeizureRecord } from '../types';
 import { TrendingUp, Package, MapPin, Calendar, Layers, ArrowUpRight, ArrowDownRight, Info, Target } from 'lucide-react';
 
+const IntelligenceTooltip: React.FC<{ title: string; content: string }> = ({ title, content }) => (
+  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 p-3 bg-[#0b1c3d] text-white text-[10px] leading-relaxed rounded-xl opacity-0 xl:group-hover:opacity-100 transition-all duration-300 pointer-events-none z-[100] shadow-2xl border border-blue-900/50 -translate-y-2 xl:group-hover:translate-y-0 hidden xl:block">
+    <div className="flex items-center gap-2 mb-2 border-b border-blue-800/50 pb-2">
+      <Info size={12} className="text-blue-400" />
+      <span className="font-black uppercase tracking-widest text-blue-400">{title}</span>
+    </div>
+    <p className="text-blue-100/80 font-medium leading-normal">{content}</p>
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 translate-y-px border-8 border-transparent border-b-[#0b1c3d]" />
+  </div>
+);
+
 interface SummaryStatsProps {
   data: SeizureRecord[];
 }
@@ -23,7 +34,7 @@ const SummaryStats: React.FC<SummaryStatsProps> = ({ data }) => {
     const topCategoryPct = topCategoryEntry ? Math.round((topCategoryEntry[1] / total) * 100) : 0;
 
     // 3. Normalized Temporal Average & Trend
-    const dates = data.map(d => new Date(d.date).getTime()).filter(t => !isNaN(t)).sort((a, b) => a - b);
+    const dates = data.map(d => new Date(d.date).getTime()).filter(t => !Number.isNaN(t)).sort((a, b) => a - b);
     const minDate = dates.length > 0 ? dates[0] : Date.now();
     const maxDate = dates.length > 0 ? dates[dates.length - 1] : Date.now();
     const diffMs = maxDate - minDate;
@@ -97,17 +108,6 @@ const SummaryStats: React.FC<SummaryStatsProps> = ({ data }) => {
   }, [data]);
 
   if (!stats) return null;
-
-  const IntelligenceTooltip: React.FC<{ title: string; content: string }> = ({ title, content }) => (
-    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-64 p-3 bg-[#0b1c3d] text-white text-[10px] leading-relaxed rounded-xl opacity-0 xl:group-hover:opacity-100 transition-all duration-300 pointer-events-none z-[100] shadow-2xl border border-blue-900/50 -translate-y-2 xl:group-hover:translate-y-0 hidden xl:block">
-      <div className="flex items-center gap-2 mb-2 border-b border-blue-800/50 pb-2">
-        <Info size={12} className="text-blue-400" />
-        <span className="font-black uppercase tracking-widest text-blue-400">{title}</span>
-      </div>
-      <p className="text-blue-100/80 font-medium leading-normal">{content}</p>
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 translate-y-px border-8 border-transparent border-b-[#0b1c3d]" />
-    </div>
-  );
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 mb-4">

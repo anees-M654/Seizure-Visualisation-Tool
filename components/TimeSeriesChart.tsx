@@ -2,6 +2,20 @@ import React, { useMemo } from 'react';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { SeizureRecord } from '../types';
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-[#0b1c3d] text-white p-3 rounded-xl shadow-2xl border border-blue-900/50">
+        <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{payload[0].payload.displayDate || label}</p>
+        <div className="flex items-center gap-3">
+          <span className="text-lg font-bold">{payload[0].value} <span className="text-[10px] text-blue-300/60 uppercase tracking-widest font-bold">Units Collected</span></span>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 interface TimeSeriesChartProps {
   data: SeizureRecord[];
   isDarkMode: boolean;
@@ -12,7 +26,7 @@ const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({ data, isDarkMode }) =
     if (data.length === 0) return [];
     
     // Determine bounds to decide binning strategy (days vs months)
-    const validDates = data.map(d => new Date(d.date).getTime()).filter(t => !isNaN(t)).sort();
+    const validDates = data.map(d => new Date(d.date).getTime()).filter(t => !Number.isNaN(t)).sort();
     if (validDates.length === 0) return [];
     
     const minDate = validDates[0];
@@ -25,7 +39,7 @@ const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({ data, isDarkMode }) =
     
     data.forEach(d => {
       const ms = new Date(d.date).getTime();
-      if (isNaN(ms)) return;
+      if (Number.isNaN(ms)) return;
       const dateStr = new Date(ms).toISOString();
       let key = dateStr.split('T')[0]; // YYYY-MM-DD
       
@@ -45,25 +59,13 @@ const TimeSeriesChart: React.FC<TimeSeriesChartProps> = ({ data, isDarkMode }) =
       if (isMonthly) {
         const [yr, mo] = d.date.split('-');
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        displayDate = `${monthNames[parseInt(mo) - 1]} '${yr.slice(2)}`;
+        displayDate = `${monthNames[Number.parseInt(mo, 10) - 1]} '${yr.slice(2)}`;
       }
       return { ...d, displayDate };
     });
   }, [data]);
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-[#0b1c3d] text-white p-3 rounded-xl shadow-2xl border border-blue-900/50">
-          <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{payload[0].payload.displayDate || label}</p>
-          <div className="flex items-center gap-3">
-            <span className="text-lg font-bold">{payload[0].value} <span className="text-[10px] text-blue-300/60 uppercase tracking-widest font-bold">Units Collected</span></span>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
+
 
   if (chartData.length === 0) return (
     <div className="h-full flex items-center justify-center text-slate-400 text-[10px] font-bold uppercase tracking-widest">
