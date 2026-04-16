@@ -24,13 +24,13 @@ export default defineConfig(({ mode }) => {
       },
       resolve: {
         alias: {
-          '@': path.resolve(__dirname, '.'),
+          '@': path.resolve(__dirname, './software'),
         }
       },
       test: {
         globals: true,
         environment: 'jsdom',
-        setupFiles: './setupTests.ts',
+        setupFiles: './software/setupTests.ts',
         coverage: {
           provider: 'v8',
           reporter: ['text', 'json', 'html'],
