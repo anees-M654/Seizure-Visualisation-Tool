@@ -90,25 +90,25 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileUpload, isLoading }) 
       <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 max-w-xs">
         Upload your spreadsheet in <strong>CSV</strong> or <strong>XLSX</strong> format to begin visual analysis.
       </p>
-      
+
       <label className="cursor-pointer bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-colors flex items-center gap-2">
         <FileSpreadsheet size={18} />
         {isLoading ? 'Processing...' : 'Choose File'}
-        <input 
-          type="file" 
-          className="hidden" 
-          accept=".csv,.xls,.xlsx" 
+        <input
+          type="file"
+          className="hidden"
+          accept=".csv,.xls,.xlsx"
           onChange={handleFileChange}
           disabled={isLoading}
         />
       </label>
-      
+
       <div className="mt-6 flex flex-col items-center gap-2">
         <p className="text-xs text-slate-400">
           Required columns: Date, Postcode, Category
         </p>
-        <button 
-          onClick={() => onFileUpload([])} 
+        <button
+          onClick={() => onFileUpload([])}
           className="text-[10px] text-blue-500 font-bold hover:underline"
         >
           Or click here to use sample intelligence data

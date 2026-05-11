@@ -137,8 +137,65 @@ const TemporalPlayback: React.FC<{
   </div>
 );
 
+// Helper component for the printable data appendix
+const PrintSummaryAppendix: React.FC<{ data: SeizureRecord[] }> = ({ data }) => {
+  const types = [
+    { key: 'city', title: 'Top Seizure Locations' },
+    { key: 'category', title: 'Classification Distribution' },
+    { key: 'itemType', title: 'Primary Items Seized' }
+  ];
+
+  const totalCount = data.length;
+  if (totalCount === 0) return null;
+
+  return (
+    <div className="hidden print:block mt-12 pt-8 border-t-2 border-slate-900">
+      <h2 className="text-2xl font-black uppercase tracking-tighter mb-8">Intelligence Data Appendix</h2>
+      <div className="grid grid-cols-2 gap-x-12 gap-y-8">
+        {types.map(t => {
+          const counts: Record<string, number> = {};
+          data.forEach(d => {
+            const val = d[t.key as keyof SeizureRecord] || 'Unknown';
+            counts[String(val)] = (counts[String(val)] || 0) + 1;
+          });
+
+          const chartData = Object.entries(counts)
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 10);
+
+          return (
+            <div key={t.key} className="break-inside-avoid mb-6">
+              <h3 className="text-xs font-black uppercase tracking-[3px] text-blue-600 mb-3 border-b border-blue-100 pb-2">{t.title}</h3>
+              <table className="w-full text-[9px] border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="p-1.5 text-left font-black uppercase text-slate-500">Rank</th>
+                    <th className="p-1.5 text-left font-black uppercase text-slate-500">Subject</th>
+                    <th className="p-1.5 text-right font-black uppercase text-slate-500">Units</th>
+                    <th className="p-1.5 text-right font-black uppercase text-slate-500">Impact</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {chartData.map((item, index) => (
+                    <tr key={item.name}>
+                      <td className="p-1.5 font-bold text-slate-400">#{index + 1}</td>
+                      <td className="p-1.5 font-black uppercase text-blue-800 tracking-tight">{item.name}</td>
+                      <td className="p-1.5 text-right font-bold tabular-nums text-slate-900">{item.value.toLocaleString()}</td>
+                      <td className="p-1.5 text-right font-black text-blue-500 tabular-nums">{((item.value / totalCount) * 100).toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // Root component of the Y&H ROCU Seizure Analysis Tool.
-// This orchestrates the data flow from import to visualization.
 const App: React.FC = () => {
   // Core data state - holds the parsed records from the spreadsheet
   const [rawData, setRawData] = useState<SeizureRecord[]>([]);
@@ -344,7 +401,7 @@ const App: React.FC = () => {
               />
             </aside>
 
-            <div className="flex-1 flex flex-col overflow-hidden bg-slate-100 dark:bg-slate-900 print:overflow-visible print:bg-white print:block transition-colors duration-300">
+            <div className="flex-1 flex flex-col overflow-hidden bg-slate-100 dark:bg-slate-900 print:overflow-visible print:bg-white print:block transition-colors duration-300 print:h-auto">
               {/* Structured Report Header for PDF Exports */}
               <PrintHeader aiSummary={aiSummary} />
 
@@ -355,7 +412,7 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              <div className="p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 overflow-y-auto print:overflow-visible print:block print:p-4">
+              <div className="p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 overflow-y-auto print:overflow-visible print:block print:p-4 print:h-auto">
                 <div className="lg:col-span-12 print:hidden">
                   <SummaryStats data={filteredData} />
                 </div>
@@ -400,7 +457,7 @@ const App: React.FC = () => {
                 </div>
 
                 {/* Requirement: Produce a top 10 summary of data */}
-                <div className="lg:col-span-4 space-y-4 overflow-y-auto pr-1 print:overflow-visible print:grid print:grid-cols-2 print:gap-4 print:space-y-0">
+                <div className="lg:col-span-4 space-y-4 overflow-y-auto pr-1 print:overflow-visible print:grid print:grid-cols-2 print:gap-4 print:space-y-0 print:h-auto">
                   <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between print:hidden transition-colors duration-300">
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Visualisation Mode</span>
                     <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800">
@@ -414,26 +471,29 @@ const App: React.FC = () => {
                         onClick={() => setChartType('pie')}
                         className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${chartType === 'pie' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                       >
-                        Pie
+                        Donut
                       </button>
                     </div>
                   </div>
 
-                  <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-[280px] hover:shadow-md transition-shadow duration-300 print:h-[280px] print:break-inside-avoid print:shadow-none print:border-slate-100">
+                  <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-[280px] hover:shadow-md transition-shadow duration-300 print:h-auto print:shadow-none print:border-slate-100 print-break-inside-avoid">
                     <TopTenChart data={filteredData} type="city" chartType={chartType} isDarkMode={isDarkMode} />
                   </div>
-                  <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-[280px] hover:shadow-md transition-shadow duration-300 print:h-[280px] print:break-inside-avoid print:shadow-none print:border-slate-100">
+                  <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-[280px] hover:shadow-md transition-shadow duration-300 print:h-auto print:shadow-none print:border-slate-100 print-break-inside-avoid">
                     <TopTenChart data={filteredData} type="category" chartType={chartType} isDarkMode={isDarkMode} />
                   </div>
-                  <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-[280px] hover:shadow-md transition-shadow duration-300 print:h-[280px] print:break-inside-avoid print:shadow-none print:border-slate-100">
+                  <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-[280px] hover:shadow-md transition-shadow duration-300 print:h-auto print:shadow-none print:border-slate-100 print-break-inside-avoid">
                     <TopTenChart data={filteredData} type="itemType" chartType={chartType} isDarkMode={isDarkMode} />
                   </div>
 
-                  <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-[240px] hover:shadow-md transition-shadow duration-300 print:h-[240px] print:break-inside-avoid print:shadow-none print:border-slate-100">
+                  <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-[240px] hover:shadow-md transition-shadow duration-300 print:h-[240px] print:shadow-none print:border-slate-100 print-break-inside-avoid">
                     <TimeSeriesChart data={filteredData} isDarkMode={isDarkMode} />
                   </div>
                 </div>
               </div>
+              
+              {/* Requirement: Consolidated Intelligence Appendix for PDF Exports */}
+              <PrintSummaryAppendix data={filteredData} />
             </div>
           </>
         )}

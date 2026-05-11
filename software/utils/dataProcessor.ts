@@ -25,7 +25,7 @@ export const generateMockData = (count: number): any[] => {
   for (let i = 0; i < count; i++) {
     const category = CATEGORIES[Math.floor(Math.random() * (CATEGORIES.length - 1)) + 1];
     const city = CITIES[Math.floor(Math.random() * (CITIES.length - 1)) + 1];
-    
+
     // Find a postcode prefix for this city (or just pick one)
     const pcPrefixes = Object.keys(YORKSHIRE_GEO_MAP);
     const postcodePrefix = pcPrefixes[Math.floor(Math.random() * pcPrefixes.length)];
@@ -62,7 +62,7 @@ export const parseRawData = async (data: any[]): Promise<{ records: SeizureRecor
 
   // Pre-process rows to extract all unique postcodes
   const uniquePostcodes = new Set<string>();
-  
+
   const rawRows = data.map((row, index) => {
     // We try to be flexible with column names in case the source spreadsheet changes.
     const dateVal = row.Date || row.date || row.SEIZURE_DATE;
@@ -99,7 +99,7 @@ export const parseRawData = async (data: any[]): Promise<{ records: SeizureRecor
 
   for (let i = 0; i < pcArray.length; i += CHUNK_SIZE) {
     const chunk = pcArray.slice(i, i + CHUNK_SIZE);
-    
+
     // Create the API fetch Promise but do NOT stall the loop waiting for it. 
     // We add it to our array of "waiters" immediately!
     const singleBatchPromise = fetch('https://api.postcodes.io/postcodes', {
@@ -107,20 +107,20 @@ export const parseRawData = async (data: any[]): Promise<{ records: SeizureRecor
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ postcodes: chunk })
     })
-    .then(async (response) => {
-      if (response.ok) {
-        const result = await response.json();
-        result.result.forEach((res: any) => {
-           // Because postcodes.io strips spaces on input matches, we index by query stripped
-           if (res.result) {
-             postcodeMap.set(res.query.replace(/\s+/g, ''), { lat: res.result.latitude, lng: res.result.longitude });
-           } else {
-             postcodeMap.set(res.query.replace(/\s+/g, ''), null);
-           }
-        });
-      }
-    })
-    .catch((err) => console.error("Geocoding Parallel Batch Failed", err));
+      .then(async (response) => {
+        if (response.ok) {
+          const result = await response.json();
+          result.result.forEach((res: any) => {
+            // Because postcodes.io strips spaces on input matches, we index by query stripped
+            if (res.result) {
+              postcodeMap.set(res.query.replace(/\s+/g, ''), { lat: res.result.latitude, lng: res.result.longitude });
+            } else {
+              postcodeMap.set(res.query.replace(/\s+/g, ''), null);
+            }
+          });
+        }
+      })
+      .catch((err) => console.error("Geocoding Parallel Batch Failed", err));
 
     fetchPromises.push(singleBatchPromise);
   }
@@ -134,22 +134,22 @@ export const parseRawData = async (data: any[]): Promise<{ records: SeizureRecor
     let lng = 0;
 
     if (parsed.cleanPostcode) {
-       const exact = postcodeMap.get(parsed.cleanPostcode);
-       if (exact) {
-         // Exact rooftop mapping, no random jitter applied
-         lat = exact.lat;
-         lng = exact.lng;
-       } else {
-         // Fallback to fuzzy prefix if exact lookup failed (like generated mock data or malformed real data)
-         const pcMatch = parsed.cleanPostcode.match(/^([A-Z]{1,2})/);
-         const pcArea = pcMatch ? pcMatch[1] : null;
-         const fallbackCoords = pcArea ? YORKSHIRE_GEO_MAP[pcArea] : null;
-         if (fallbackCoords) {
-           // Jitter is ONLY applied to the blurry fallback center to prevent overlapping stacks of dead pins.
-           lat = fallbackCoords.lat + ((Math.random() - 0.5) * 0.02);
-           lng = fallbackCoords.lng + ((Math.random() - 0.5) * 0.02);
-         }
-       }
+      const exact = postcodeMap.get(parsed.cleanPostcode);
+      if (exact) {
+        // Exact rooftop mapping, no random jitter applied
+        lat = exact.lat;
+        lng = exact.lng;
+      } else {
+        // Fallback to fuzzy prefix if exact lookup failed (like generated mock data or malformed real data)
+        const pcMatch = parsed.cleanPostcode.match(/^([A-Z]{1,2})/);
+        const pcArea = pcMatch ? pcMatch[1] : null;
+        const fallbackCoords = pcArea ? YORKSHIRE_GEO_MAP[pcArea] : null;
+        if (fallbackCoords) {
+          // Jitter is ONLY applied to the blurry fallback center to prevent overlapping stacks of dead pins.
+          lat = fallbackCoords.lat + ((Math.random() - 0.5) * 0.02);
+          lng = fallbackCoords.lng + ((Math.random() - 0.5) * 0.02);
+        }
+      }
     }
 
     if (lat === 0 && lng === 0) invalidPostcodes++;
@@ -167,7 +167,7 @@ export const parseRawData = async (data: any[]): Promise<{ records: SeizureRecor
       cash: Number(parsed.row.Cash || parsed.row.Value || 0),
       latitude: lat,
       longitude: lng,
-      ...parsed.row 
+      ...parsed.row
     });
   });
 

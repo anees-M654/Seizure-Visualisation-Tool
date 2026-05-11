@@ -1,20 +1,17 @@
 import React, { useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend, LabelList } from 'recharts';
 import { SeizureRecord } from './types';
 
-const CustomTooltip = ({ active, payload, totalCount }: any) => {
+const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
+    const data = payload[0].payload;
     const val = payload[0].value;
-    const percentage = ((val / totalCount) * 100).toFixed(1);
+    
     return (
-      <div className="bg-[#0b1c3d] text-white p-3 rounded-xl shadow-2xl border border-blue-900/50">
-        <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">{payload[0].payload.name}</p>
-        <div className="flex items-center gap-3">
-          <span className="text-lg font-bold">{val}</span>
-          <span className="text-[10px] font-bold bg-blue-500/20 px-1.5 py-0.5 rounded border border-blue-500/30">
-            {percentage}% of Total
-          </span>
-        </div>
+      <div className="bg-slate-900 text-white px-3 py-1.5 rounded shadow-xl border border-blue-500/50 flex items-center gap-3">
+        <p className="text-[9px] font-black uppercase tracking-widest text-blue-400">{data.name}</p>
+        <div className="w-px h-3 bg-white/20" />
+        <p className="text-[9px] font-black tabular-nums whitespace-nowrap">{val.toLocaleString()} UNITS</p>
       </div>
     );
   }
@@ -44,8 +41,19 @@ const TopTenChart: React.FC<TopTenChartProps> = ({ data, type, chartType, isDark
 
   const totalCount = useMemo(() => data.length, [data]);
 
-  // High-contrast Intelligence Palette: Moves from deep navy to vibrant teal to maintain readability
-  const COLORS = ['#1e3a8a', '#1e40af', '#1d4ed8', '#2563eb', '#3b82f6', '#0ea5e9', '#06b6d4', '#0891b2', '#0d9488', '#14b8a6'];
+  // Navy-to-Teal Gradient Palette: Matches user reference images
+  const COLORS = [
+    '#1e3a8a', // Deep Navy
+    '#2563eb', // Strong Blue
+    '#3b82f6', // Royal Blue
+    '#60a5fa', // Light Blue
+    '#38bdf8', // Sky Blue
+    '#06b6d4', // Bright Cyan
+    '#0891b2', // Deep Cyan
+    '#0d9488', // Dark Teal
+    '#10b981', // Emerald
+    '#14b8a6'  // Vibrant Turquoise
+  ];
 
   const titleMap = {
     city: "Top Seizure Locations",
@@ -63,13 +71,12 @@ const TopTenChart: React.FC<TopTenChartProps> = ({ data, type, chartType, isDark
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">{titleMap[type]}</h3>
-        <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase">Top 10 Focus</span>
       </div>
 
-      <div className="flex-1">
+      <div className="flex-1 print:h-[250px] print:min-h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
           {chartType === 'bar' ? (
-            <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 30, top: 0, bottom: 0 }}>
+            <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 10, top: 0, bottom: 0 }}>
               <XAxis type="number" hide />
               <YAxis
                 dataKey="name"
@@ -81,7 +88,10 @@ const TopTenChart: React.FC<TopTenChartProps> = ({ data, type, chartType, isDark
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip content={<CustomTooltip totalCount={totalCount} />} cursor={{ fill: 'transparent' }} />
+              <Tooltip 
+                content={<CustomTooltip totalCount={totalCount} isDarkMode={isDarkMode} />}
+                cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
+              />
               <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={12}>
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -89,19 +99,63 @@ const TopTenChart: React.FC<TopTenChartProps> = ({ data, type, chartType, isDark
               </Bar>
             </BarChart>
           ) : (
-            <PieChart>
-              <Tooltip content={<CustomTooltip totalCount={totalCount} />} />
+            <PieChart margin={{ top: 40, bottom: 40, left: 45, right: 45 }}>
+              <Tooltip 
+                content={<CustomTooltip totalCount={totalCount} isDarkMode={isDarkMode} />}
+              />
               <Pie
                 data={chartData}
-                innerRadius={50}
-                outerRadius={70}
-                paddingAngle={4}
+                cx="50%"
+                cy="50%"
+                innerRadius={42}
+                outerRadius={68}
+                paddingAngle={0}
                 dataKey="value"
                 animationBegin={0}
                 animationDuration={800}
+                labelLine={false}
+                label={({ cx, cy, midAngle, innerRadius, outerRadius, value, name }) => {
+                  const RADIAN = Math.PI / 180;
+                  const innerLabelRadius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                  const ix = cx + innerLabelRadius * Math.cos(-midAngle * RADIAN);
+                  const iy = cy + innerLabelRadius * Math.sin(-midAngle * RADIAN);
+                  const outerLabelRadius = outerRadius + 18;
+                  const ox = cx + outerLabelRadius * Math.cos(-midAngle * RADIAN);
+                  const oy = cy + outerLabelRadius * Math.sin(-midAngle * RADIAN);
+                  const p = ((value / totalCount) * 100).toFixed(0);
+                  
+                  return (
+                    <g>
+                      <text 
+                        x={ix} 
+                        y={iy} 
+                        fill="white" 
+                        textAnchor="middle" 
+                        dominantBaseline="central"
+                        className="text-[9px] font-black"
+                      >
+                        {p}%
+                      </text>
+                      <text 
+                        x={ox} 
+                        y={oy} 
+                        fill={isDarkMode ? '#cbd5e1' : '#475569'} 
+                        textAnchor={ox > cx ? 'start' : 'end'} 
+                        dominantBaseline="central"
+                        className="text-[9px] italic font-medium tracking-tight"
+                      >
+                        {name}
+                      </text>
+                    </g>
+                  );
+                }}
               >
                 {chartData.map((entry, index) => (
-                  <Cell key={`cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(255,255,255,0.2)" />
+                  <Cell 
+                    key={`cell-${entry.name}-${index}`} 
+                    fill={COLORS[index % COLORS.length]} 
+                    stroke="none"
+                  />
                 ))}
               </Pie>
             </PieChart>

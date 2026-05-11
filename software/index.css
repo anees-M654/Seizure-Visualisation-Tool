@@ -123,3 +123,28 @@ input[type=range]::-webkit-slider-thumb {
 .dark ::-webkit-scrollbar-corner {
   background: #0f172a; /* matches track background */
 }
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background-color: white !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  #root {
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .print-break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .recharts-responsive-container {
+    min-height: 250px !important;
+  }
+}
